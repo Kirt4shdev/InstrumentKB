@@ -1,0 +1,197 @@
+﻿{
+    "article_id":  "INS-000347",
+    "sap_itemcode":  "A1000347",
+    "sap_description":  "Sensor CTD Oceanográfico Sea-Bird SBE 37-SI MicroCAT",
+    "article_type":  "INSTRUMENTO",
+    "category":  "CTD Sensor",
+    "family":  "Sensores",
+    "subfamily":  "Oceanografía",
+    "manufacturer_id":  1,
+    "model":  "SBE 37-SI",
+    "variant":  "MicroCAT",
+    "power_supply_min_v":  7,
+    "power_supply_max_v":  15,
+    "power_consumption_typ_w":  0.015,
+    "current_max_a":  null,
+    "voltage_rating_v":  null,
+    "ip_rating":  "IP68",
+    "dimensions_mm":  "13.5 cm length x 3.8 cm diameter",
+    "weight_g":  430,
+    "length_m":  null,
+    "diameter_mm":  null,
+    "material":  null,
+    "color":  null,
+    "oper_temp_min_c":  -5,
+    "oper_temp_max_c":  35,
+    "storage_temp_min_c":  null,
+    "storage_temp_max_c":  null,
+    "oper_humidity_min_pct":  0,
+    "oper_humidity_max_pct":  100,
+    "altitude_max_m":  7000,
+    "emc_compliance":  "CE",
+    "certifications":  "CE, RoHS",
+    "first_release_year":  2000,
+    "last_revision_year":  2023,
+    "discontinued":  false,
+    "replacement_article_id":  null,
+    "internal_notes":  "Sensor de alta precisión para mediciones submarinas",
+    "active":  true,
+    "stock_location":  null,
+    "min_stock":  null,
+    "current_stock":  null,
+    "created_at":  "2025-11-09T21:45:11.086Z",
+    "updated_at":  "2025-11-09T21:45:11.086Z",
+    "manufacturer":  {
+                         "manufacturer_id":  1,
+                         "name":  "Sea-Bird Scientific",
+                         "country":  "USA",
+                         "website":  "https://www.seabird.com",
+                         "support_email":  "support@seabird.com",
+                         "notes":  "Líder mundial en instrumentación oceanográfica"
+                     },
+    "documents":  [
+
+                  ],
+    "images":  [
+
+               ],
+    "article_variables":  [
+                              {
+                                  "art_var_id":  1,
+                                  "article_id":  "INS-000347",
+                                  "variable_id":  1,
+                                  "range_min":  -5,
+                                  "range_max":  35,
+                                  "unit":  "°C",
+                                  "accuracy_abs":  0.002,
+                                  "accuracy_rel_pct":  null,
+                                  "resolution":  0.0001,
+                                  "update_rate_hz":  1,
+                                  "notes":  "ITS-90 temperature scale",
+                                  "variable":  {
+                                                   "variable_id":  1,
+                                                   "name":  "Temperature",
+                                                   "unit_default":  "°C",
+                                                   "description":  "Temperatura del fluido o ambiente"
+                                               }
+                              },
+                              {
+                                  "art_var_id":  2,
+                                  "article_id":  "INS-000347",
+                                  "variable_id":  2,
+                                  "range_min":  0,
+                                  "range_max":  7000,
+                                  "unit":  "dbar",
+                                  "accuracy_abs":  0.1,
+                                  "accuracy_rel_pct":  null,
+                                  "resolution":  0.001,
+                                  "update_rate_hz":  1,
+                                  "notes":  "Absolute pressure",
+                                  "variable":  {
+                                                   "variable_id":  2,
+                                                   "name":  "Pressure",
+                                                   "unit_default":  "dbar",
+                                                   "description":  "Presión absoluta"
+                                               }
+                              },
+                              {
+                                  "art_var_id":  3,
+                                  "article_id":  "INS-000347",
+                                  "variable_id":  4,
+                                  "range_min":  0,
+                                  "range_max":  9,
+                                  "unit":  "S/m",
+                                  "accuracy_abs":  0.0003,
+                                  "accuracy_rel_pct":  null,
+                                  "resolution":  0.00001,
+                                  "update_rate_hz":  1,
+                                  "notes":  null,
+                                  "variable":  {
+                                                   "variable_id":  4,
+                                                   "name":  "Conductivity",
+                                                   "unit_default":  "S/m",
+                                                   "description":  "Conductividad eléctrica"
+                                               }
+                              },
+                              {
+                                  "art_var_id":  4,
+                                  "article_id":  "INS-000347",
+                                  "variable_id":  3,
+                                  "range_min":  0,
+                                  "range_max":  42,
+                                  "unit":  "PSU",
+                                  "accuracy_abs":  0.005,
+                                  "accuracy_rel_pct":  null,
+                                  "resolution":  0.0001,
+                                  "update_rate_hz":  1,
+                                  "notes":  "Calculated from conductivity and temperature",
+                                  "variable":  {
+                                                   "variable_id":  3,
+                                                   "name":  "Salinity",
+                                                   "unit_default":  "PSU",
+                                                   "description":  "Salinidad del agua"
+                                               }
+                              }
+                          ],
+    "analog_outputs":  [
+
+                       ],
+    "digital_io":  [
+
+                   ],
+    "article_protocols":  [
+                              {
+                                  "art_proto_id":  1,
+                                  "article_id":  "INS-000347",
+                                  "type":  "ModbusRTU",
+                                  "physical_layer":  "RS-485",
+                                  "port_label":  "Connector 1",
+                                  "default_address":  "1",
+                                  "baudrate":  9600,
+                                  "databits":  8,
+                                  "parity":  "N",
+                                  "stopbits":  1,
+                                  "ip_address":  null,
+                                  "ip_port":  null,
+                                  "notes":  "Standard Modbus RTU over RS-485"
+                              }
+                          ],
+    "modbus_registers":  [
+
+                         ],
+    "sdi12_commands":  [
+
+                       ],
+    "nmea_sentences":  [
+
+                       ],
+    "tags":  [
+                 {
+                     "tag_id":  1,
+                     "article_id":  "INS-000347",
+                     "tag":  "oceanography"
+                 },
+                 {
+                     "tag_id":  2,
+                     "article_id":  "INS-000347",
+                     "tag":  "CTD"
+                 },
+                 {
+                     "tag_id":  3,
+                     "article_id":  "INS-000347",
+                     "tag":  "underwater"
+                 },
+                 {
+                     "tag_id":  4,
+                     "article_id":  "INS-000347",
+                     "tag":  "high-precision"
+                 }
+             ],
+    "provenance":  [
+
+                   ],
+    "replacement_for":  null,
+    "replaced_by":  [
+
+                    ]
+}

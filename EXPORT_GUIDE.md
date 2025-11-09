@@ -28,22 +28,55 @@ Se han implementado tres formas de exportar todos los datos del sistema para fac
 - Metadata (Información de la exportación)
 
 ### 2. 🔄 **Exportación a JSON**
-- **Formato**: JSON estructurado con arrays por tabla
+- **Formato**: JSON con artículos completos y anidados
 - **Estructura**: 
   ```json
   {
     "exported_at": "2025-11-09T...",
     "version": "2.0",
     "sap_integration": true,
-    "data": {
-      "articles": [...],
-      "manufacturers": [...],
-      "variables": [...],
-      ...
-    }
+    "total_articles": 7,
+    "articles": [
+      {
+        "article_id": "INS-000347",
+        "sap_itemcode": "...",
+        "sap_description": "...",
+        "manufacturer": {
+          "manufacturer_id": 1,
+          "name": "Campbell Scientific",
+          ...
+        },
+        "documents": [...],
+        "images": [...],
+        "article_variables": [
+          {
+            "art_var_id": 1,
+            "variable": {
+              "name": "Temperature",
+              "unit_default": "°C"
+            },
+            "range_min": -40,
+            "range_max": 85,
+            ...
+          }
+        ],
+        "analog_outputs": [...],
+        "digital_io": [...],
+        "article_protocols": [...],
+        "modbus_registers": [...],
+        "sdi12_commands": [...],
+        "nmea_sentences": [...],
+        "tags": [...],
+        "provenance": [...]
+      },
+      {
+        // Siguiente artículo completo...
+      }
+    ]
   }
   ```
-- **Uso**: Ideal para procesamiento automático, análisis de datos, backups
+- **Uso**: Ideal para procesamiento automático, análisis de datos, backups, importación en otras aplicaciones
+- **Ventaja**: Cada instrumento incluye TODA su información relacionada de forma anidada (fabricante, variables con sus detalles, protocolos, etc.)
 - **Endpoint**: `GET /api/export/json`
 
 ### 3. 🗄️ **Exportación a PostgreSQL (SQL)**

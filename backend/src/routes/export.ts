@@ -16,94 +16,47 @@ exportRouter.get('/test', async (req: Request, res: Response) => {
   }
 });
 
-// GET export all data as JSON
+// GET export all data as JSON (complete articles with all relations)
 exportRouter.get('/json', async (req: Request, res: Response) => {
   try {
-    console.log('Starting JSON export...');
+    console.log('Starting JSON export (complete articles)...');
     
-    // Try each query one by one to find which one fails
-    console.log('Fetching articles...');
-    const articles = await prisma.article.findMany();
-    console.log(`Articles: ${articles.length}`);
-    
-    console.log('Fetching manufacturers...');
-    const manufacturers = await prisma.manufacturer.findMany();
-    console.log(`Manufacturers: ${manufacturers.length}`);
-    
-    console.log('Fetching variables...');
-    const variables = await prisma.variableDict.findMany();
-    console.log(`Variables: ${variables.length}`);
-    
-    console.log('Fetching documents...');
-    const documents = await prisma.document.findMany();
-    console.log(`Documents: ${documents.length}`);
-    
-    console.log('Fetching images...');
-    const images = await prisma.image.findMany();
-    console.log(`Images: ${images.length}`);
-    
-    console.log('Fetching articleVariables...');
-    const articleVariables = await prisma.articleVariable.findMany();
-    console.log(`ArticleVariables: ${articleVariables.length}`);
-    
-    console.log('Fetching analogOutputs...');
-    const analogOutputs = await prisma.analogOutput.findMany();
-    console.log(`AnalogOutputs: ${analogOutputs.length}`);
-    
-    console.log('Fetching digitalIO...');
-    const digitalIO = await prisma.digitalIO.findMany();
-    console.log(`DigitalIO: ${digitalIO.length}`);
-    
-    console.log('Fetching protocols...');
-    const protocols = await prisma.articleProtocol.findMany();
-    console.log(`Protocols: ${protocols.length}`);
-    
-    console.log('Fetching modbusRegisters...');
-    const modbusRegisters = await prisma.modbusRegister.findMany();
-    console.log(`ModbusRegisters: ${modbusRegisters.length}`);
-    
-    console.log('Fetching sdi12Commands...');
-    const sdi12Commands = await prisma.sDI12Command.findMany();
-    console.log(`SDI12Commands: ${sdi12Commands.length}`);
-    
-    console.log('Fetching nmeaSentences...');
-    const nmeaSentences = await prisma.nMEASentence.findMany();
-    console.log(`NMEASentences: ${nmeaSentences.length}`);
-    
-    console.log('Fetching tags...');
-    const tags = await prisma.tag.findMany();
-    console.log(`Tags: ${tags.length}`);
-    
-    console.log('Fetching provenance...');
-    const provenance = await prisma.provenance.findMany();
-    console.log(`Provenance: ${provenance.length}`);
+    // Fetch all articles with all their related data
+    const articles = await prisma.article.findMany({
+      include: {
+        manufacturer: true,
+        documents: true,
+        images: true,
+        article_variables: {
+          include: {
+            variable: true
+          }
+        },
+        analog_outputs: true,
+        digital_io: true,
+        article_protocols: true,
+        modbus_registers: true,
+        sdi12_commands: true,
+        nmea_sentences: true,
+        tags: true,
+        provenance: true,
+        replacement_for: true,
+        replaced_by: true
+      }
+    });
 
-    console.log('Data fetched successfully');
+    console.log(`Successfully fetched ${articles.length} complete articles with all relations`);
 
     const exportData = {
       exported_at: new Date().toISOString(),
       version: '2.0',
       sap_integration: true,
-      data: {
-        articles,
-        manufacturers,
-        variables,
-        documents,
-        images,
-        articleVariables,
-        analogOutputs,
-        digitalIO,
-        protocols,
-        modbusRegisters,
-        sdi12Commands,
-        nmeaSentences,
-        tags,
-        provenance
-      }
+      total_articles: articles.length,
+      articles: articles
     };
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="instrumentkb-export-${Date.now()}.json"`);
+    res.setHeader('Content-Disposition', `attachment; filename="instrumentkb-complete-export-${Date.now()}.json"`);
     res.json(exportData);
   } catch (error) {
     console.error('Export error:', error);

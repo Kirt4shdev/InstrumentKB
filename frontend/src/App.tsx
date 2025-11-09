@@ -171,9 +171,9 @@ function App() {
                   leftSection={<IconFileTypeCsv size={16} />}
                   onClick={handleExportJSON}
                 >
-                  JSON (Arrays)
+                  JSON (Completo)
                   <div style={{ fontSize: '0.75rem', color: 'gray' }}>
-                    Para análisis de datos
+                    Cada instrumento con toda su info
                   </div>
                 </Menu.Item>
                 <Menu.Item
