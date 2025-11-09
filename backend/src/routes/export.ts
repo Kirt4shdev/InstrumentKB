@@ -4,40 +4,81 @@ import * as XLSX from 'xlsx';
 
 export const exportRouter = Router();
 
+// Simple test endpoint
+exportRouter.get('/test', async (req: Request, res: Response) => {
+  try {
+    console.log('Test endpoint called');
+    const manufacturers = await prisma.manufacturer.findMany();
+    res.json({ message: 'Test successful', count: manufacturers.length });
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({ error: 'Test failed', message: error instanceof Error ? error.message : 'Unknown' });
+  }
+});
+
 // GET export all data as JSON
 exportRouter.get('/json', async (req: Request, res: Response) => {
   try {
-    const [
-      articles,
-      manufacturers,
-      variables,
-      documents,
-      images,
-      articleVariables,
-      analogOutputs,
-      digitalIO,
-      protocols,
-      modbusRegisters,
-      sdi12Commands,
-      nmeaSentences,
-      tags,
-      provenance
-    ] = await Promise.all([
-      prisma.article.findMany(),
-      prisma.manufacturer.findMany(),
-      prisma.variableDict.findMany(),
-      prisma.document.findMany(),
-      prisma.image.findMany(),
-      prisma.articleVariable.findMany(),
-      prisma.analogOutput.findMany(),
-      prisma.digitalIO.findMany(),
-      prisma.articleProtocol.findMany(),
-      prisma.modbusRegister.findMany(),
-      prisma.sDI12Command.findMany(),
-      prisma.nMEASentence.findMany(),
-      prisma.tag.findMany(),
-      prisma.provenance.findMany()
-    ]);
+    console.log('Starting JSON export...');
+    
+    // Try each query one by one to find which one fails
+    console.log('Fetching articles...');
+    const articles = await prisma.article.findMany();
+    console.log(`Articles: ${articles.length}`);
+    
+    console.log('Fetching manufacturers...');
+    const manufacturers = await prisma.manufacturer.findMany();
+    console.log(`Manufacturers: ${manufacturers.length}`);
+    
+    console.log('Fetching variables...');
+    const variables = await prisma.variableDict.findMany();
+    console.log(`Variables: ${variables.length}`);
+    
+    console.log('Fetching documents...');
+    const documents = await prisma.document.findMany();
+    console.log(`Documents: ${documents.length}`);
+    
+    console.log('Fetching images...');
+    const images = await prisma.image.findMany();
+    console.log(`Images: ${images.length}`);
+    
+    console.log('Fetching articleVariables...');
+    const articleVariables = await prisma.articleVariable.findMany();
+    console.log(`ArticleVariables: ${articleVariables.length}`);
+    
+    console.log('Fetching analogOutputs...');
+    const analogOutputs = await prisma.analogOutput.findMany();
+    console.log(`AnalogOutputs: ${analogOutputs.length}`);
+    
+    console.log('Fetching digitalIO...');
+    const digitalIO = await prisma.digitalIO.findMany();
+    console.log(`DigitalIO: ${digitalIO.length}`);
+    
+    console.log('Fetching protocols...');
+    const protocols = await prisma.articleProtocol.findMany();
+    console.log(`Protocols: ${protocols.length}`);
+    
+    console.log('Fetching modbusRegisters...');
+    const modbusRegisters = await prisma.modbusRegister.findMany();
+    console.log(`ModbusRegisters: ${modbusRegisters.length}`);
+    
+    console.log('Fetching sdi12Commands...');
+    const sdi12Commands = await prisma.sDI12Command.findMany();
+    console.log(`SDI12Commands: ${sdi12Commands.length}`);
+    
+    console.log('Fetching nmeaSentences...');
+    const nmeaSentences = await prisma.nMEASentence.findMany();
+    console.log(`NMEASentences: ${nmeaSentences.length}`);
+    
+    console.log('Fetching tags...');
+    const tags = await prisma.tag.findMany();
+    console.log(`Tags: ${tags.length}`);
+    
+    console.log('Fetching provenance...');
+    const provenance = await prisma.provenance.findMany();
+    console.log(`Provenance: ${provenance.length}`);
+
+    console.log('Data fetched successfully');
 
     const exportData = {
       exported_at: new Date().toISOString(),
@@ -66,7 +107,12 @@ exportRouter.get('/json', async (req: Request, res: Response) => {
     res.json(exportData);
   } catch (error) {
     console.error('Export error:', error);
-    res.status(500).json({ error: 'Error exporting data' });
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({ 
+      error: 'Error exporting data',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

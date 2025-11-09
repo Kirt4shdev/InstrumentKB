@@ -37,8 +37,8 @@ import {
 import { ArticleTypeOption } from '../types';
 
 // Componente helper para labels con tooltip
-const LabelWithTooltip = ({ label, tooltip, required }: { label: string; tooltip: string; required?: boolean }) => (
-  <Group gap={4} wrap="nowrap" style={{ display: 'inline-flex' }}>
+const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip: string }) => (
+  <Group gap={4}>
     <Text size="sm" fw={500}>{label}</Text>
     <Tooltip 
       label={tooltip} 
@@ -51,7 +51,6 @@ const LabelWithTooltip = ({ label, tooltip, required }: { label: string; tooltip
         <IconInfoCircle size={14} />
       </ActionIcon>
     </Tooltip>
-    {required && <Text size="sm" c="red" fw={700}>*</Text>}
   </Group>
 );
 
@@ -550,10 +549,10 @@ function ArticleNew() {
                               <LabelWithTooltip
                                 label="SAP ItemCode"
                                 tooltip="Código único del artículo en SAP Business One. Ejemplo: 'A1000123'. Este código debe ser único en todo el sistema y se usa para sincronizar con SAP."
-                                required
                               />
                             }
                             placeholder="A1000123"
+                            required
                             {...form.getInputProps('sap_itemcode')}
                           />
                         </Grid.Col>
@@ -563,10 +562,10 @@ function ArticleNew() {
                               <LabelWithTooltip
                                 label="Descripción SAP"
                                 tooltip="Descripción completa y detallada del artículo tal como aparecerá en SAP. Debe ser clara y descriptiva para facilitar búsquedas. Ejemplo: 'Sensor de temperatura PT100 con rango -50 a 200°C'."
-                                required
                               />
                             }
                             placeholder="Descripción completa del artículo"
+                            required
                             {...form.getInputProps('sap_description')}
                           />
                         </Grid.Col>
@@ -576,11 +575,11 @@ function ArticleNew() {
                               <LabelWithTooltip
                                 label="Tipo de Artículo"
                                 tooltip="Categoría principal del artículo según la clasificación de la empresa. Determina qué campos técnicos estarán disponibles. Por ejemplo, INSTRUMENTO habilita variables, protocolos, Modbus, etc."
-                                required
                               />
                             }
                             placeholder="Selecciona un tipo"
                             data={articleTypes.map(t => ({ value: t.value, label: t.label }))}
+                            required
                             searchable
                             {...form.getInputProps('article_type')}
                           />
@@ -685,7 +684,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Alimentación Mín (V)"
-                                tooltip="Voltaje mínimo de alimentación que el dispositivo puede aceptar. Ejemplo: 10V. Importante para garantizar funcionamiento en condiciones de baja tensión."
+                                tooltip="Voltaje mínimo de alimentación requerido por el dispositivo. Ejemplo: 10V. Si el voltaje cae por debajo, el dispositivo puede no funcionar correctamente."
                               />
                             }
                             placeholder="10"
@@ -697,7 +696,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Alimentación Máx (V)"
-                                tooltip="Voltaje máximo de alimentación que el dispositivo puede tolerar sin dañarse. Ejemplo: 30V. No exceder este valor para evitar daños permanentes."
+                                tooltip="Voltaje máximo de alimentación soportado. Ejemplo: 30V. Exceder este valor puede dañar el dispositivo permanentemente."
                               />
                             }
                             placeholder="30"
@@ -721,7 +720,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Corriente Máx (A)"
-                                tooltip="Corriente máxima que el dispositivo puede manejar o consumir. Ejemplo: 5A. Importante para dimensionar cables y protecciones eléctricas."
+                                tooltip="Corriente máxima que puede suministrar o consumir el dispositivo en Amperes. Ejemplo: 5A. Importante para dimensionar cableado y protecciones."
                               />
                             }
                             placeholder="5"
@@ -733,7 +732,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Voltaje Nominal (V)"
-                                tooltip="Voltaje de operación nominal o recomendado. Ejemplo: 24V. Este es el voltaje al que el dispositivo funciona óptimamente."
+                                tooltip="Voltaje de operación nominal o estándar. Ejemplo: 24V. Es el voltaje recomendado para operación óptima del dispositivo."
                               />
                             }
                             placeholder="24"
@@ -751,7 +750,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="IP Rating"
-                                tooltip="Grado de protección contra polvo y agua según norma IEC 60529. Ejemplo: 'IP65' significa protección total contra polvo y protección contra chorros de agua. IP67 puede sumergirse temporalmente."
+                                tooltip="Clasificación de protección contra ingreso de partículas y agua. Ejemplo: IP65 (protección total contra polvo y chorros de agua). Primer dígito=sólidos (0-6), segundo=líquidos (0-8)."
                               />
                             }
                             placeholder="IP65"
@@ -763,7 +762,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Dimensiones (mm)"
-                                tooltip="Dimensiones físicas del artículo en milímetros. Formato: 'Largo x Ancho x Alto'. Ejemplo: '100 x 50 x 30'. Importante para verificar espacios de montaje."
+                                tooltip="Dimensiones físicas del artículo en milímetros. Formato: Largo x Ancho x Alto. Ejemplo: '100 x 50 x 30'. Importante para verificar espacio de instalación."
                               />
                             }
                             placeholder="100 x 50 x 30"
@@ -775,7 +774,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Peso (g)"
-                                tooltip="Peso del artículo en gramos. Ejemplo: 500g. Útil para calcular cargas en estructuras y costos de envío."
+                                tooltip="Peso del artículo en gramos. Ejemplo: 500g. Útil para cálculos de carga en soportes y para logística de transporte."
                               />
                             }
                             placeholder="500"
@@ -787,7 +786,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Longitud (m)"
-                                tooltip="Longitud total del artículo en metros. Principalmente para cables y elementos lineales. Ejemplo: 100m para un rollo de cable."
+                                tooltip="Longitud total en metros. Aplicable especialmente a cables, tubos, o componentes lineales. Ejemplo: 100m para un rollo de cable."
                               />
                             }
                             placeholder="100"
@@ -799,7 +798,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Diámetro (mm)"
-                                tooltip="Diámetro del artículo en milímetros. Principalmente para cables, tuberías y elementos cilíndricos. Ejemplo: 7.5mm para un cable."
+                                tooltip="Diámetro exterior en milímetros. Aplicable a cables, tubos, conectores circulares. Ejemplo: 7.5mm para un cable CAT6."
                               />
                             }
                             placeholder="7.5"
@@ -811,7 +810,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Material"
-                                tooltip="Material de construcción del artículo. Ejemplo: 'Cobre + PVC', 'Acero inoxidable 316', 'Aluminio anodizado'. Importante para compatibilidad química y durabilidad."
+                                tooltip="Material(es) de construcción principal. Ejemplo: 'Cobre + PVC' para cables, 'Acero inoxidable 316L' para soportes, 'Policarbonato' para carcasas."
                               />
                             }
                             placeholder="Cobre + PVC"
@@ -823,7 +822,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Color"
-                                tooltip="Color del artículo. Ejemplo: 'Negro', 'Gris RAL7035', 'Azul'. Útil para identificación visual y cumplimiento de códigos de color."
+                                tooltip="Color del artículo. Ejemplo: 'Negro', 'Azul', 'Gris RAL 7035'. Útil para identificación visual y estética en instalaciones."
                               />
                             }
                             placeholder="Negro"
@@ -841,7 +840,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Temp. Op. Mín (°C)"
-                                tooltip="Temperatura mínima de operación en grados Celsius. Ejemplo: -20°C. Por debajo de esta temperatura el dispositivo puede no funcionar correctamente o dañarse."
+                                tooltip="Temperatura mínima de operación en grados Celsius. Ejemplo: -20°C. Por debajo de esta temperatura, el dispositivo puede no funcionar o dar lecturas incorrectas."
                               />
                             }
                             placeholder="-20"
@@ -853,7 +852,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Temp. Op. Máx (°C)"
-                                tooltip="Temperatura máxima de operación en grados Celsius. Ejemplo: 70°C. Por encima de esta temperatura el dispositivo puede fallar o sufrir daños permanentes."
+                                tooltip="Temperatura máxima de operación en grados Celsius. Ejemplo: 70°C. Por encima de esta temperatura, el dispositivo puede sufrir daños o mal funcionamiento."
                               />
                             }
                             placeholder="70"
@@ -865,7 +864,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Temp. Almac. Mín (°C)"
-                                tooltip="Temperatura mínima de almacenamiento seguro. Ejemplo: -40°C. Cuando el dispositivo está apagado puede tolerar temperaturas más extremas que en operación."
+                                tooltip="Temperatura mínima para almacenamiento seguro. Ejemplo: -40°C. El dispositivo apagado puede almacenarse en este rango sin daños permanentes."
                               />
                             }
                             placeholder="-40"
@@ -877,7 +876,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Temp. Almac. Máx (°C)"
-                                tooltip="Temperatura máxima de almacenamiento seguro. Ejemplo: 85°C. Importante para condiciones de transporte y almacén."
+                                tooltip="Temperatura máxima para almacenamiento seguro. Ejemplo: 85°C. No exceder durante transporte o almacenamiento para evitar degradación."
                               />
                             }
                             placeholder="85"
@@ -889,7 +888,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Humedad Op. Mín (%)"
-                                tooltip="Humedad relativa mínima de operación. Ejemplo: 0%. Importante en ambientes muy secos que pueden generar electricidad estática."
+                                tooltip="Humedad relativa mínima de operación en porcentaje. Ejemplo: 0%. Algunos sensores requieren un mínimo de humedad para funcionar correctamente."
                               />
                             }
                             placeholder="0"
@@ -901,7 +900,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Humedad Op. Máx (%)"
-                                tooltip="Humedad relativa máxima de operación. Ejemplo: 95%. Por encima puede causar condensación y daños eléctricos. Atención: sin condensación."
+                                tooltip="Humedad relativa máxima de operación sin condensación. Ejemplo: 95% RH. Proteger de condensación directa salvo que esté especificado IP67/68."
                               />
                             }
                             placeholder="95"
@@ -913,7 +912,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Altitud Máx (m)"
-                                tooltip="Altitud máxima de operación sobre el nivel del mar. Ejemplo: 3000m. A mayor altitud hay menor presión atmosférica, lo que puede afectar el funcionamiento y refrigeración."
+                                tooltip="Altitud máxima de operación sobre el nivel del mar en metros. Ejemplo: 3000m. A mayor altitud, la presión atmosférica es menor, puede afectar sensores de presión."
                               />
                             }
                             placeholder="3000"
@@ -931,7 +930,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="EMC Compliance"
-                                tooltip="Cumplimiento de compatibilidad electromagnética. Ejemplo: 'CE, FCC'. Garantiza que el dispositivo no genera interferencias ni es susceptible a ellas."
+                                tooltip="Cumplimiento de normativas de Compatibilidad Electromagnética. Ejemplo: 'CE, FCC'. Indica que el dispositivo no genera ni es sensible a interferencias electromagnéticas."
                               />
                             }
                             placeholder="CE, FCC"
@@ -943,7 +942,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Certificaciones"
-                                tooltip="Certificaciones y aprobaciones de seguridad. Ejemplo: 'CE, UL, RoHS, ATEX'. Requeridas para cumplimiento legal y uso en ambientes peligrosos (ATEX para atmósferas explosivas)."
+                                tooltip="Lista de certificaciones oficiales del producto. Ejemplo: 'CE, UL, RoHS, ATEX'. Separar con comas. Son requisitos legales para uso en ciertas industrias o regiones."
                               />
                             }
                             placeholder="CE, UL, RoHS, ATEX"
@@ -955,7 +954,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Año Primera Versión"
-                                tooltip="Año en que se lanzó la primera versión de este producto. Ejemplo: 2020. Útil para evaluar madurez del producto."
+                                tooltip="Año en que se lanzó la primera versión de este modelo. Ejemplo: 2020. Útil para evaluar madurez del producto y disponibilidad de repuestos."
                               />
                             }
                             placeholder="2020"
@@ -967,7 +966,7 @@ function ArticleNew() {
                             label={
                               <LabelWithTooltip
                                 label="Año Última Revisión"
-                                tooltip="Año de la última revisión o actualización del producto. Ejemplo: 2024. Indica si el producto está actualizado."
+                                tooltip="Año de la última actualización o revisión del modelo. Ejemplo: 2024. Indica si el producto está activamente mantenido por el fabricante."
                               />
                             }
                             placeholder="2024"
@@ -1012,11 +1011,36 @@ function ArticleNew() {
                         <Table>
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th>Variable</Table.Th>
-                              <Table.Th>Rango Mín</Table.Th>
-                              <Table.Th>Rango Máx</Table.Th>
-                              <Table.Th>Unidad</Table.Th>
-                              <Table.Th>Precisión</Table.Th>
+                              <Table.Th>
+                                <LabelWithTooltip
+                                  label="Variable"
+                                  tooltip="Magnitud física que el instrumento puede medir. Ejemplo: 'Temperatura', 'Presión', 'Caudal'. Selecciona de la lista de variables registradas."
+                                />
+                              </Table.Th>
+                              <Table.Th>
+                                <LabelWithTooltip
+                                  label="Rango Mín"
+                                  tooltip="Valor mínimo que el instrumento puede medir. Ejemplo: -50 para un sensor de temperatura. Define el límite inferior del rango de medición."
+                                />
+                              </Table.Th>
+                              <Table.Th>
+                                <LabelWithTooltip
+                                  label="Rango Máx"
+                                  tooltip="Valor máximo que el instrumento puede medir. Ejemplo: 200 para un sensor de temperatura. Define el límite superior del rango de medición."
+                                />
+                              </Table.Th>
+                              <Table.Th>
+                                <LabelWithTooltip
+                                  label="Unidad"
+                                  tooltip="Unidad de medida de la variable. Ejemplo: '°C', 'bar', 'm³/h', 'mA'. Debe ser consistente con la variable medida."
+                                />
+                              </Table.Th>
+                              <Table.Th>
+                                <LabelWithTooltip
+                                  label="Precisión"
+                                  tooltip="Precisión absoluta de la medición. Ejemplo: ±0.1 significa que el error máximo es de 0.1 unidades. Menor valor = mayor precisión."
+                                />
+                              </Table.Th>
                               <Table.Th></Table.Th>
                             </Table.Tr>
                           </Table.Thead>
@@ -1294,7 +1318,12 @@ function ArticleNew() {
                           <Grid key={i} mb="sm">
                             <Grid.Col span={3}>
                               <Select
-                                label="Tipo"
+                                label={
+                                  <LabelWithTooltip
+                                    label="Tipo"
+                                    tooltip="Tipo de salida analógica. 4-20mA es estándar industrial (permite detectar cable roto porque 0mA indica fallo), 0-10V común en automatización de edificios."
+                                  />
+                                }
                                 data={['Current_4_20mA', 'Voltage_0_10V', 'Pulse', 'Relay', 'TTL', 'Other']}
                                 value={ao.type}
                                 onChange={(val) => updateItem(analogOutputs, setAnalogOutputs, i, 'type', val)}
@@ -1302,14 +1331,24 @@ function ArticleNew() {
                             </Grid.Col>
                             <Grid.Col span={2}>
                               <NumberInput
-                                label="Canales"
+                                label={
+                                  <LabelWithTooltip
+                                    label="Canales"
+                                    tooltip="Número de salidas analógicas independientes. Ejemplo: 2 significa que puede tener 2 señales simultáneas independientes."
+                                  />
+                                }
                                 value={ao.num_channels}
                                 onChange={(val) => updateItem(analogOutputs, setAnalogOutputs, i, 'num_channels', val)}
                               />
                             </Grid.Col>
                             <Grid.Col span={2}>
                               <TextInput
-                                label="Unidad"
+                                label={
+                                  <LabelWithTooltip
+                                    label="Unidad"
+                                    tooltip="Unidad de la señal de salida. Ejemplo: 'mA', 'V', 'Hz'. Debe coincidir con el tipo seleccionado."
+                                  />
+                                }
                                 value={ao.unit}
                                 onChange={(e) => updateItem(analogOutputs, setAnalogOutputs, i, 'unit', e.target.value)}
                               />
@@ -1351,7 +1390,12 @@ function ArticleNew() {
                           <Grid key={i} mb="sm">
                             <Grid.Col span={3}>
                               <Select
-                                label="Dirección"
+                                label={
+                                  <LabelWithTooltip
+                                    label="Dirección"
+                                    tooltip="Tipo de señal. Input = entrada (el dispositivo recibe la señal), Output = salida (el dispositivo genera la señal)."
+                                  />
+                                }
                                 data={['input', 'output']}
                                 value={dio.direction}
                                 onChange={(val) => updateItem(digitalIO, setDigitalIO, i, 'direction', val)}
@@ -1359,7 +1403,12 @@ function ArticleNew() {
                             </Grid.Col>
                             <Grid.Col span={3}>
                               <Select
-                                label="Tipo de Señal"
+                                label={
+                                  <LabelWithTooltip
+                                    label="Tipo de Señal"
+                                    tooltip="Tecnología de la señal. TTL (0-5V lógica digital), Relay (contacto seco), Pulse (señal pulsante), 4-20mA (señal de corriente)."
+                                  />
+                                }
                                 data={['Current_4_20mA', 'Voltage_0_10V', 'Pulse', 'Relay', 'TTL', 'Other']}
                                 value={dio.signal_type}
                                 onChange={(val) => updateItem(digitalIO, setDigitalIO, i, 'signal_type', val)}
@@ -1367,7 +1416,12 @@ function ArticleNew() {
                             </Grid.Col>
                             <Grid.Col span={2}>
                               <TextInput
-                                label="Nivel Voltaje"
+                                label={
+                                  <LabelWithTooltip
+                                    label="Nivel Voltaje"
+                                    tooltip="Nivel de voltaje de la señal digital. Ejemplo: '3.3V' para TTL moderno, '24V' para señales industriales, '5V' para TTL clásico."
+                                  />
+                                }
                                 value={dio.voltage_level}
                                 onChange={(e) => updateItem(digitalIO, setDigitalIO, i, 'voltage_level', e.target.value)}
                               />
@@ -1433,28 +1487,48 @@ function ArticleNew() {
                                   <Grid>
                                     <Grid.Col span={2}>
                                       <NumberInput
-                                        label="FC"
+                                        label={
+                                          <LabelWithTooltip
+                                            label="FC"
+                                            tooltip="Function Code de Modbus. 03=Read Holding Registers, 04=Read Input Registers, 16=Write Multiple Registers. Define el tipo de operación."
+                                          />
+                                        }
                                         value={reg.function_code}
                                         onChange={(val) => updateItem(modbusRegisters, setModbusRegisters, i, 'function_code', val)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={2}>
                                       <NumberInput
-                                        label="Dirección"
+                                        label={
+                                          <LabelWithTooltip
+                                            label="Dirección"
+                                            tooltip="Dirección del registro Modbus en decimal. Ejemplo: 4097. Consulta el datasheet del dispositivo para la tabla de registros."
+                                          />
+                                        }
                                         value={reg.address}
                                         onChange={(val) => updateItem(modbusRegisters, setModbusRegisters, i, 'address', val)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={4}>
                                       <TextInput
-                                        label="Nombre"
+                                        label={
+                                          <LabelWithTooltip
+                                            label="Nombre"
+                                            tooltip="Nombre descriptivo del registro. Ejemplo: 'Temperatura', 'Humedad', 'Presión'. Debe ser claro para identificar el dato."
+                                          />
+                                        }
                                         value={reg.name}
                                         onChange={(e) => updateItem(modbusRegisters, setModbusRegisters, i, 'name', e.target.value)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={2}>
                                       <Select
-                                        label="Tipo Dato"
+                                        label={
+                                          <LabelWithTooltip
+                                            label="Tipo Dato"
+                                            tooltip="Tipo de dato del registro. INT16 (entero 16 bits con signo), UINT16 (sin signo), FLOAT32 (decimal de precisión simple, ocupa 2 registros)."
+                                          />
+                                        }
                                         data={['INT16', 'UINT16', 'INT32', 'UINT32', 'FLOAT32']}
                                         value={reg.datatype}
                                         onChange={(val) => updateItem(modbusRegisters, setModbusRegisters, i, 'datatype', val)}
@@ -1462,7 +1536,12 @@ function ArticleNew() {
                                     </Grid.Col>
                                     <Grid.Col span={2}>
                                       <Select
-                                        label="R/W"
+                                        label={
+                                          <LabelWithTooltip
+                                            label="R/W"
+                                            tooltip="Permisos del registro. R=Solo lectura (valores medidos), W=Solo escritura (configuración), RW=Lectura/Escritura."
+                                          />
+                                        }
                                         data={['R', 'W', 'RW']}
                                         value={reg.rw}
                                         onChange={(val) => updateItem(modbusRegisters, setModbusRegisters, i, 'rw', val)}
@@ -1470,7 +1549,12 @@ function ArticleNew() {
                                     </Grid.Col>
                                     <Grid.Col span={6}>
                                       <TextInput
-                                        label="Descripción"
+                                        label={
+                                          <LabelWithTooltip
+                                            label="Descripción"
+                                            tooltip="Descripción detallada del registro. Explica qué representa, rangos válidos, o cualquier consideración especial."
+                                          />
+                                        }
                                         value={reg.description}
                                         onChange={(e) => updateItem(modbusRegisters, setModbusRegisters, i, 'description', e.target.value)}
                                       />
@@ -1480,7 +1564,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Unidad"
-                                            tooltip="Unidad de medida del valor almacenado en este registro Modbus."
+                                            tooltip="Unidad de medida del valor almacenado en el registro. Ejemplo: '°C', 'bar', 'kW'. Debe coincidir con la variable que representa."
                                           />
                                         }
                                         value={reg.unit}
@@ -1543,7 +1627,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Comando"
-                                            tooltip="Comando SDI-12. Formato: <dirección><comando>. Ejemplos: '0M!' (iniciar medición del sensor 0), '0D0!' (enviar datos), 'a!' (cambiar dirección)."
+                                            tooltip="Comando SDI-12 estándar. Ejemplo: 'aM!' (start measurement), 'aD0!' (send data). 'a' es la dirección del sensor (0-9, A-Z, a-z)."
                                           />
                                         }
                                         placeholder="aM!"
@@ -1556,7 +1640,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Descripción"
-                                            tooltip="Explicación de qué hace este comando. Ejemplo: 'Inicia la medición de temperatura y humedad'. Útil como referencia rápida."
+                                            tooltip="Descripción de lo que hace el comando. Ejemplo: 'Inicia medición de temperatura y humedad'. Ayuda a entender la función del comando."
                                           />
                                         }
                                         value={cmd.description}
@@ -1568,7 +1652,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Formato de Respuesta"
-                                            tooltip="Formato de la respuesta del sensor. Ejemplo: '0+25.3+65.2' significa dirección 0, temperatura 25.3°C, humedad 65.2%. Ayuda a interpretar los datos recibidos."
+                                            tooltip="Formato esperado de la respuesta del sensor. Ejemplo: 'a+25.3+65.2' donde 'a' es dirección, 25.3 es temp y 65.2 es humedad. Usar + como separador."
                                           />
                                         }
                                         placeholder="a+value1+value2+value3"
@@ -1632,7 +1716,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Sentencia"
-                                            tooltip="Sentencia NMEA 0183. Formato: $TTSSS. Ejemplos: '$GPGGA' (datos GPS), '$GPRMC' (posición y velocidad). El $ indica inicio de sentencia."
+                                            tooltip="Identificador de sentencia NMEA 0183. Ejemplo: '$GPGGA' (GPS Fix Data), '$GPVTG' (velocidad). Siempre empieza con $ seguido del código de 5 letras."
                                           />
                                         }
                                         placeholder="$GPGGA"
@@ -1645,7 +1729,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Descripción"
-                                            tooltip="Descripción de qué información contiene esta sentencia. Ejemplo: '$GPGGA contiene tiempo, posición, calidad de señal y número de satélites'."
+                                            tooltip="Descripción del tipo de datos que contiene la sentencia. Ejemplo: 'Posición GPS con calidad y altitud'. Ayuda a identificar rápidamente la función."
                                           />
                                         }
                                         value={nmea.description}
@@ -1657,7 +1741,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Campos"
-                                            tooltip="Lista de campos que contiene la sentencia separados por comas. Ejemplo: 'time,lat,lon,quality,sats,hdop,alt'. Útil para parsear los datos recibidos."
+                                            tooltip="Lista de campos de datos en orden, separados por comas. Ejemplo: 'time,lat,lon,quality,sats,hdop,alt'. Facilita el parseo de la sentencia."
                                           />
                                         }
                                         placeholder="time,lat,lon,quality,sats,hdop,alt"
@@ -1712,7 +1796,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Tipo"
-                                            tooltip="Tipo de documento. Datasheet = hoja de datos técnicos, Manual = manual de usuario, Certificate = certificado (calibración, conformidad), Drawing = plano técnico."
+                                            tooltip="Tipo de documento. Datasheet=hoja de especificaciones técnicas, Manual=manual de usuario/instalación, Certificate=certificado de calibración, Drawing=plano/esquema."
                                           />
                                         }
                                         data={['datasheet', 'manual', 'certificate', 'drawing', 'other']}
@@ -1725,7 +1809,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Título"
-                                            tooltip="Título descriptivo del documento. Ejemplo: 'Datasheet PT100-A Rev.3', 'Manual de instalación español'. Facilita la búsqueda."
+                                            tooltip="Título descriptivo del documento. Ejemplo: 'Datasheet PT100 v2.3', 'Manual instalación ES'. Debe ser claro para facilitar la búsqueda."
                                           />
                                         }
                                         value={doc.title}
@@ -1737,7 +1821,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Idioma"
-                                            tooltip="Idioma del documento. Código ISO: 'ES' = español, 'EN' = inglés, 'FR' = francés, 'DE' = alemán. Útil para documentación multiidioma."
+                                            tooltip="Código de idioma del documento (ISO 639-1). Ejemplo: 'ES' (español), 'EN' (inglés), 'DE' (alemán). Facilita filtrar documentos por idioma."
                                           />
                                         }
                                         placeholder="ES"
@@ -1750,7 +1834,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="URL / Ruta"
-                                            tooltip="Ubicación del documento. Puede ser una URL (https://...) o ruta local (/uploads/...). Si es local, el archivo debe estar en el servidor."
+                                            tooltip="URL externa (https://...) o ruta local (/uploads/...) del documento. Debe ser accesible para todos los usuarios autorizados. Verificar que el link no expire."
                                           />
                                         }
                                         placeholder="https://... o /uploads/..."
@@ -1800,7 +1884,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="Descripción"
-                                            tooltip="Descripción de la imagen. Ejemplo: 'Vista frontal', 'Diagrama de conexiones', 'Dimensiones de montaje'. Ayuda a identificar la imagen."
+                                            tooltip="Descripción breve de la imagen. Ejemplo: 'Vista frontal', 'Dimensiones', 'Conexiones eléctricas'. Ayuda a identificar rápidamente el contenido."
                                           />
                                         }
                                         value={img.caption}
@@ -1812,7 +1896,7 @@ function ArticleNew() {
                                         label={
                                           <LabelWithTooltip
                                             label="URL / Ruta"
-                                            tooltip="Ubicación de la imagen. URL externa (https://...) o ruta local (/uploads/images/...). Formatos soportados: JPG, PNG, GIF."
+                                            tooltip="URL externa (https://...) o ruta local (/uploads/...) de la imagen. Formatos recomendados: JPG, PNG. Verificar que la URL sea accesible permanentemente."
                                           />
                                         }
                                         placeholder="https://... o /uploads/..."
@@ -1845,12 +1929,7 @@ function ArticleNew() {
                   <Stack gap="md">
                     {/* Tags */}
                     <Paper p="md" withBorder>
-                      <Title order={5} mb="md">
-                        <LabelWithTooltip
-                          label="Tags"
-                          tooltip="Etiquetas para clasificación y búsqueda rápida. Ejemplos: 'ethernet', 'inalámbrico', 'outdoor', 'explosivos'. Separa con Enter. Útil para filtrado."
-                        />
-                      </Title>
+                      <Title order={5} mb="md">Tags</Title>
                       <Group mb="md">
                         <TextInput
                           placeholder="Agregar tag"
@@ -1878,23 +1957,13 @@ function ArticleNew() {
                       <Title order={5} mb="md">Notas y Estado</Title>
                       <Stack gap="md">
                         <Textarea
-                          label={
-                            <LabelWithTooltip
-                              label="Notas Internas"
-                              tooltip="Notas de uso interno. Información que no aparece en SAP pero es útil para el equipo técnico. Ejemplo: 'Compatible con proyecto X', 'Requiere adaptador Y'."
-                            />
-                          }
+                          label="Notas Internas"
                           placeholder="Notas adicionales sobre el artículo"
                           rows={4}
                           {...form.getInputProps('internal_notes')}
                         />
                         <Switch
-                          label={
-                            <LabelWithTooltip
-                              label="Artículo Activo"
-                              tooltip="Indica si el artículo está activo en el catálogo. Desactivar oculta el artículo de búsquedas normales pero mantiene el histórico. Útil para productos descontinuados."
-                            />
-                          }
+                          label="Artículo Activo"
                           {...form.getInputProps('active', { type: 'checkbox' })}
                         />
                       </Stack>
