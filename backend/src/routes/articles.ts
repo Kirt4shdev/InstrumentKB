@@ -45,19 +45,137 @@ articlesRouter.post('/', async (req: Request, res: Response) => {
       req.body.article_id = generateArticleId(req.body.article_type);
     }
     
+    // Extraer relaciones anidadas
+    const {
+      article_variables,
+      article_protocols,
+      analog_outputs,
+      digital_io,
+      modbus_registers,
+      sdi12_commands,
+      nmea_sentences,
+      documents,
+      images,
+      tags,
+      ...articleData
+    } = req.body;
+    
+    // Crear el artículo con relaciones anidadas
     const article = await prisma.article.create({
-      data: req.body,
+      data: {
+        ...articleData,
+        ...(article_variables?.length > 0 && {
+          article_variables: {
+            create: article_variables.map((v: any) => ({
+              variable_id: v.variable_id,
+              range_min: v.range_min,
+              range_max: v.range_max,
+              unit: v.unit,
+              accuracy_abs: v.accuracy_abs,
+              resolution: v.resolution,
+              update_rate_hz: v.update_rate_hz,
+              notes: v.notes,
+            }))
+          }
+        }),
+        ...(article_protocols?.length > 0 && {
+          article_protocols: {
+            create: article_protocols.map((p: any) => ({
+              type: p.type,
+              physical_layer: p.physical_layer,
+              port_label: p.port_label,
+              default_address: p.default_address,
+              baudrate: p.baudrate,
+              databits: p.databits,
+              parity: p.parity,
+              stopbits: p.stopbits,
+              ip_address: p.ip_address,
+              ip_port: p.ip_port,
+              notes: p.notes,
+            }))
+          }
+        }),
+        ...(analog_outputs?.length > 0 && {
+          analog_outputs: {
+            create: analog_outputs
+          }
+        }),
+        ...(digital_io?.length > 0 && {
+          digital_io: {
+            create: digital_io
+          }
+        }),
+        ...(modbus_registers?.length > 0 && {
+          modbus_registers: {
+            create: modbus_registers
+          }
+        }),
+        ...(sdi12_commands?.length > 0 && {
+          sdi12_commands: {
+            create: sdi12_commands
+          }
+        }),
+        ...(nmea_sentences?.length > 0 && {
+          nmea_sentences: {
+            create: nmea_sentences
+          }
+        }),
+        ...(documents?.length > 0 && {
+          documents: {
+            create: documents
+          }
+        }),
+        ...(images?.length > 0 && {
+          images: {
+            create: images
+          }
+        }),
+        ...(tags?.length > 0 && {
+          tags: {
+            create: tags.map((t: any) => ({
+              tag: typeof t === 'string' ? t : t.tag
+            }))
+          }
+        }),
+      },
       include: {
         manufacturer: true,
+        article_variables: {
+          include: {
+            variable: true
+          }
+        },
+        article_protocols: true,
+        analog_outputs: true,
+        digital_io: true,
+        modbus_registers: true,
+        sdi12_commands: true,
+        nmea_sentences: true,
+        documents: true,
+        images: true,
+        tags: true,
       },
     });
     res.status(201).json(article);
   } catch (error: any) {
-    if (error.code === 'P2002') {
-      return res.status(400).json({ error: 'Article ID or SAP ItemCode already exists' });
-    }
     console.error('Error creating article:', error);
-    res.status(500).json({ error: 'Error creating article', details: error.message });
+    if (error.code === 'P2002') {
+      return res.status(400).json({ 
+        error: 'El código SAP o ID del artículo ya existe',
+        field: error.meta?.target 
+      });
+    }
+    if (error.code === 'P2003') {
+      return res.status(400).json({ 
+        error: 'Referencia inválida: el fabricante o variable especificada no existe',
+        field: error.meta?.field_name
+      });
+    }
+    res.status(500).json({ 
+      error: 'Error al crear el artículo', 
+      details: error.message,
+      code: error.code
+    });
   }
 });
 

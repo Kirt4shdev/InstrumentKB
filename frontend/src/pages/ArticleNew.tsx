@@ -106,6 +106,7 @@ function ArticleNew() {
       active: true,
     },
     validate: {
+      sap_itemcode: (value) => (!value ? 'El código SAP es obligatorio' : null),
       sap_description: (value) => (!value ? 'La descripción SAP es obligatoria' : null),
       article_type: (value) => (!value ? 'El tipo de artículo es obligatorio' : null),
     },
@@ -135,61 +136,102 @@ function ArticleNew() {
       setLoading(true);
       setError(null);
       
-      // Preparar datos
-      const data: any = { ...values };
+      // Validaciones adicionales
+      if (!values.sap_itemcode?.trim()) {
+        setError('El código SAP es obligatorio');
+        setLoading(false);
+        return;
+      }
       
-      // Limpiar valores vacíos
-      Object.keys(data).forEach(key => {
-        if (data[key] === '' || data[key] === null) {
-          delete data[key];
+      if (!values.sap_description?.trim()) {
+        setError('La descripción SAP es obligatoria');
+        setLoading(false);
+        return;
+      }
+      
+      if (!values.article_type) {
+        setError('El tipo de artículo es obligatorio');
+        setLoading(false);
+        return;
+      }
+      
+      // Preparar datos
+      const data: any = {};
+      
+      // Copiar solo campos con valores
+      Object.keys(values).forEach(key => {
+        const value = values[key];
+        if (value !== '' && value !== null && value !== undefined) {
+          data[key] = value;
         }
       });
       
-      // Convertir IDs numéricos
-      if (data.manufacturer_id) {
-        data.manufacturer_id = parseInt(data.manufacturer_id);
-      }
-      
-      // Agregar relaciones
+      // Agregar relaciones solo si tienen datos
       if (articleVariables.length > 0) {
-        data.article_variables = articleVariables;
+        data.article_variables = articleVariables.filter(v => v.variable_id);
       }
       if (articleProtocols.length > 0) {
-        data.article_protocols = articleProtocols;
+        data.article_protocols = articleProtocols.filter(p => p.type);
       }
       if (analogOutputs.length > 0) {
-        data.analog_outputs = analogOutputs;
+        data.analog_outputs = analogOutputs.filter(ao => ao.type);
       }
       if (digitalIO.length > 0) {
-        data.digital_io = digitalIO;
+        data.digital_io = digitalIO.filter(dio => dio.direction);
       }
       if (modbusRegisters.length > 0) {
-        data.modbus_registers = modbusRegisters;
+        data.modbus_registers = modbusRegisters.filter(m => m.name && m.address !== null && m.address !== '');
       }
       if (sdi12Commands.length > 0) {
-        data.sdi12_commands = sdi12Commands;
+        data.sdi12_commands = sdi12Commands.filter(s => s.command);
       }
       if (nmeaSentences.length > 0) {
-        data.nmea_sentences = nmeaSentences;
+        data.nmea_sentences = nmeaSentences.filter(n => n.sentence);
       }
       if (documents.length > 0) {
-        data.documents = documents;
+        data.documents = documents.filter(d => d.title && d.url_or_path);
       }
       if (images.length > 0) {
-        data.images = images;
+        data.images = images.filter(i => i.url_or_path);
       }
       if (tags.length > 0) {
         data.tags = tags;
       }
       
-      await createArticle(data);
+      const response = await createArticle(data);
       setSuccess(true);
+      
       setTimeout(() => {
         navigate('/');
       }, 1500);
     } catch (error: any) {
       console.error('Error creating article:', error);
-      setError(error.response?.data?.error || 'Error al crear el artículo');
+      
+      // Manejo de errores específicos
+      if (error.response) {
+        const errorData = error.response.data;
+        
+        if (error.response.status === 400) {
+          if (errorData.error?.includes('ya existe')) {
+            setError('❌ Error: El código SAP ya existe en el sistema. Por favor, usa un código diferente.');
+          } else if (errorData.error?.includes('Referencia inválida')) {
+            setError('❌ Error: Has seleccionado un fabricante o variable que no existe. Por favor, verifica los datos.');
+          } else {
+            setError(`❌ Error de validación: ${errorData.error || 'Datos incorrectos'}`);
+          }
+        } else if (error.response.status === 500) {
+          setError(`❌ Error del servidor: ${errorData.details || errorData.error || 'Error interno del servidor'}`);
+        } else {
+          setError(`❌ Error: ${errorData.error || error.message || 'Error desconocido'}`);
+        }
+      } else if (error.request) {
+        setError('❌ Error de conexión: No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      } else {
+        setError(`❌ Error: ${error.message || 'Error desconocido al crear el artículo'}`);
+      }
+      
+      // Scroll al inicio para ver el error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -214,10 +256,13 @@ function ArticleNew() {
       type: 'ModbusRTU',
       physical_layer: '',
       port_label: '',
-      baudrate: 9600,
-      databits: 8,
-      parity: 'N',
-      stopbits: 1,
+      default_address: '',
+      baudrate: null,
+      databits: null,
+      parity: null,
+      stopbits: null,
+      ip_address: '',
+      ip_port: null,
       notes: ''
     }]);
   };
@@ -346,14 +391,23 @@ function ArticleNew() {
         </Group>
 
         {error && (
-          <Notification color="red" onClose={() => setError(null)}>
+          <Notification 
+            color="red" 
+            title="Error al crear el artículo"
+            onClose={() => setError(null)}
+            withCloseButton
+          >
             {error}
           </Notification>
         )}
 
         {success && (
-          <Notification color="green">
-            ¡Artículo creado exitosamente!
+          <Notification 
+            color="green" 
+            title="¡Éxito!"
+            withCloseButton={false}
+          >
+            ¡Artículo creado exitosamente! Redirigiendo...
           </Notification>
         )}
 
@@ -397,7 +451,8 @@ function ArticleNew() {
                           <TextInput
                             label="SAP ItemCode"
                             placeholder="A1000123"
-                            description="Código del artículo en SAP (opcional)"
+                            description="Código del artículo en SAP"
+                            required
                             {...form.getInputProps('sap_itemcode')}
                           />
                         </Grid.Col>
@@ -791,79 +846,166 @@ function ArticleNew() {
                         </Text>
                       ) : (
                         <Stack gap="md">
-                          {articleProtocols.map((p, i) => (
-                            <Paper key={i} p="sm" withBorder>
-                              <Grid>
-                                <Grid.Col span={11}>
-                                  <Grid>
-                                    <Grid.Col span={4}>
-                                      <Select
-                                        label="Tipo"
-                                        data={[
-                                          'ModbusRTU', 'ModbusTCP', 'SDI12', 'NMEA0183',
-                                          'CANopen', 'Profinet', 'EthernetIP', 'RS232', 'RS485', 'Other'
-                                        ]}
-                                        value={p.type}
-                                        onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'type', val)}
-                                      />
-                                    </Grid.Col>
-                                    <Grid.Col span={4}>
-                                      <TextInput
-                                        label="Capa Física"
-                                        value={p.physical_layer}
-                                        onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'physical_layer', e.target.value)}
-                                      />
-                                    </Grid.Col>
-                                    <Grid.Col span={4}>
-                                      <TextInput
-                                        label="Puerto"
-                                        value={p.port_label}
-                                        onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'port_label', e.target.value)}
-                                      />
-                                    </Grid.Col>
-                                    <Grid.Col span={3}>
-                                      <NumberInput
-                                        label="Baudrate"
-                                        value={p.baudrate}
-                                        onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'baudrate', val)}
-                                      />
-                                    </Grid.Col>
-                                    <Grid.Col span={3}>
-                                      <NumberInput
-                                        label="Data Bits"
-                                        value={p.databits}
-                                        onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'databits', val)}
-                                      />
-                                    </Grid.Col>
-                                    <Grid.Col span={3}>
-                                      <Select
-                                        label="Paridad"
-                                        data={['N', 'E', 'O']}
-                                        value={p.parity}
-                                        onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'parity', val)}
-                                      />
-                                    </Grid.Col>
-                                    <Grid.Col span={3}>
-                                      <NumberInput
-                                        label="Stop Bits"
-                                        value={p.stopbits}
-                                        onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'stopbits', val)}
-                                      />
-                                    </Grid.Col>
-                                  </Grid>
-                                </Grid.Col>
-                                <Grid.Col span={1}>
-                                  <ActionIcon 
-                                    color="red" 
-                                    onClick={() => removeItem(articleProtocols, setArticleProtocols, i)}
-                                    mt="xl"
-                                  >
-                                    <IconTrash size={16} />
-                                  </ActionIcon>
-                                </Grid.Col>
-                              </Grid>
-                            </Paper>
-                          ))}
+                          {articleProtocols.map((p, i) => {
+                            // Determinar si el protocolo necesita configuración serial
+                            const needsSerialConfig = ['ModbusRTU', 'SDI12', 'NMEA0183'].includes(p.type);
+                            const needsTCPConfig = ['ModbusTCP', 'Profinet', 'EthernetIP'].includes(p.type);
+                            
+                            return (
+                              <Paper key={i} p="sm" withBorder>
+                                <Grid>
+                                  <Grid.Col span={11}>
+                                    <Grid>
+                                      <Grid.Col span={4}>
+                                        <Select
+                                          label="Protocolo"
+                                          data={[
+                                            { value: 'ModbusRTU', label: 'Modbus RTU' },
+                                            { value: 'ModbusTCP', label: 'Modbus TCP/IP' },
+                                            { value: 'SDI12', label: 'SDI-12' },
+                                            { value: 'NMEA0183', label: 'NMEA 0183' },
+                                            { value: 'CANopen', label: 'CANopen' },
+                                            { value: 'Profinet', label: 'Profinet' },
+                                            { value: 'EthernetIP', label: 'Ethernet/IP' },
+                                            { value: 'Other', label: 'Otro' }
+                                          ]}
+                                          value={p.type}
+                                          onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'type', val)}
+                                          required
+                                        />
+                                      </Grid.Col>
+                                      <Grid.Col span={4}>
+                                        <Select
+                                          label="Capa Física"
+                                          data={[
+                                            { value: '', label: '(Ninguna)' },
+                                            { value: 'RS232', label: 'RS-232' },
+                                            { value: 'RS485', label: 'RS-485' },
+                                            { value: 'RS422', label: 'RS-422' },
+                                            { value: 'Ethernet', label: 'Ethernet' },
+                                            { value: 'CAN', label: 'CAN Bus' },
+                                            { value: 'USB', label: 'USB' },
+                                            { value: 'Wireless', label: 'Inalámbrico' },
+                                            { value: 'Fiber', label: 'Fibra óptica' }
+                                          ]}
+                                          value={p.physical_layer || ''}
+                                          onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'physical_layer', val)}
+                                        />
+                                      </Grid.Col>
+                                      <Grid.Col span={4}>
+                                        <TextInput
+                                          label="Puerto / Conector"
+                                          placeholder="COM1, RJ45, DB9..."
+                                          value={p.port_label}
+                                          onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'port_label', e.target.value)}
+                                        />
+                                      </Grid.Col>
+                                      
+                                      {/* Configuración Serial (solo para protocolos serie) */}
+                                      {needsSerialConfig && (
+                                        <>
+                                          <Grid.Col span={12}>
+                                            <Text size="sm" fw={600} c="dimmed">Configuración Serial</Text>
+                                          </Grid.Col>
+                                          <Grid.Col span={3}>
+                                            <Select
+                                              label="Baudrate"
+                                              data={[
+                                                '1200', '2400', '4800', '9600', '19200', 
+                                                '38400', '57600', '115200'
+                                              ]}
+                                              value={p.baudrate?.toString() || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'baudrate', val ? parseInt(val) : null)}
+                                            />
+                                          </Grid.Col>
+                                          <Grid.Col span={3}>
+                                            <Select
+                                              label="Data Bits"
+                                              data={['7', '8']}
+                                              value={p.databits?.toString() || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'databits', val ? parseInt(val) : null)}
+                                            />
+                                          </Grid.Col>
+                                          <Grid.Col span={3}>
+                                            <Select
+                                              label="Paridad"
+                                              data={[
+                                                { value: 'N', label: 'None (N)' },
+                                                { value: 'E', label: 'Even (E)' },
+                                                { value: 'O', label: 'Odd (O)' }
+                                              ]}
+                                              value={p.parity || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'parity', val)}
+                                            />
+                                          </Grid.Col>
+                                          <Grid.Col span={3}>
+                                            <Select
+                                              label="Stop Bits"
+                                              data={['1', '2']}
+                                              value={p.stopbits?.toString() || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'stopbits', val ? parseInt(val) : null)}
+                                            />
+                                          </Grid.Col>
+                                          <Grid.Col span={12}>
+                                            <TextInput
+                                              label="Dirección por defecto"
+                                              placeholder="1, 0a, etc."
+                                              value={p.default_address}
+                                              onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'default_address', e.target.value)}
+                                            />
+                                          </Grid.Col>
+                                        </>
+                                      )}
+                                      
+                                      {/* Configuración TCP/IP (solo para protocolos TCP) */}
+                                      {needsTCPConfig && (
+                                        <>
+                                          <Grid.Col span={12}>
+                                            <Text size="sm" fw={600} c="dimmed">Configuración TCP/IP</Text>
+                                          </Grid.Col>
+                                          <Grid.Col span={8}>
+                                            <TextInput
+                                              label="IP Address"
+                                              placeholder="192.168.1.100"
+                                              value={p.ip_address}
+                                              onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'ip_address', e.target.value)}
+                                            />
+                                          </Grid.Col>
+                                          <Grid.Col span={4}>
+                                            <NumberInput
+                                              label="Puerto TCP"
+                                              placeholder="502"
+                                              value={p.ip_port}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'ip_port', val)}
+                                            />
+                                          </Grid.Col>
+                                        </>
+                                      )}
+                                      
+                                      <Grid.Col span={12}>
+                                        <Textarea
+                                          label="Notas"
+                                          placeholder="Información adicional sobre la configuración..."
+                                          value={p.notes}
+                                          onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'notes', e.target.value)}
+                                          rows={2}
+                                        />
+                                      </Grid.Col>
+                                    </Grid>
+                                  </Grid.Col>
+                                  <Grid.Col span={1}>
+                                    <ActionIcon 
+                                      color="red" 
+                                      onClick={() => removeItem(articleProtocols, setArticleProtocols, i)}
+                                      mt="xl"
+                                    >
+                                      <IconTrash size={16} />
+                                    </ActionIcon>
+                                  </Grid.Col>
+                                </Grid>
+                              </Paper>
+                            );
+                          })}
                         </Stack>
                       )}
                     </Paper>
