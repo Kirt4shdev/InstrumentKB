@@ -46,4 +46,5 @@ export const uploadImage = (formData: FormData) =>
 
 // Export
 export const exportJSON = () => api.get('/export/json');
+export const exportExcel = () => api.get('/export/excel', { responseType: 'blob' });
 export const exportSQL = () => api.get('/export/sql');

@@ -475,18 +475,24 @@ export default function InstrumentNew() {
                       <Divider label="Especificaciones Técnicas del Instrumento" />
 
                       <Select
-                        label="Fabricante"
+                        label={
+                          <>
+                            Fabricante <Text component="span" c="red" style={{ display: 'inline' }}>*</Text>
+                          </>
+                        }
                         placeholder="Selecciona un fabricante"
                         data={manufacturers.map(m => ({ value: m.manufacturer_id.toString(), label: m.name }))}
                         searchable
-                        required
                         {...form.getInputProps('manufacturer_id')}
                       />
 
                       <TextInput
-                        label="Modelo"
+                        label={
+                          <>
+                            Modelo <Text component="span" c="red" style={{ display: 'inline' }}>*</Text>
+                          </>
+                        }
                         placeholder="ej. CTD-10"
-                        required
                         {...form.getInputProps('model')}
                       />
 
@@ -1085,9 +1091,12 @@ export default function InstrumentNew() {
       >
         <Stack gap="md">
           <TextInput
-            label="Article ID (Código Interno)"
+            label={
+              <>
+                Article ID (Código Interno) <Text component="span" c="red" style={{ display: 'inline' }}>*</Text>
+              </>
+            }
             placeholder="ej. INS-000347"
-            required
             value={newArticle.article_id}
             onChange={(e) => setNewArticle({ ...newArticle, article_id: e.target.value })}
             description="Código maestro interno del artículo"
@@ -1102,9 +1111,12 @@ export default function InstrumentNew() {
           />
 
           <Textarea
-            label="Descripción SAP"
+            label={
+              <>
+                Descripción SAP <Text component="span" c="red" style={{ display: 'inline' }}>*</Text>
+              </>
+            }
             placeholder="ej. Estación Meteorológica OTT WS600 DLUV"
-            required
             minRows={2}
             value={newArticle.sap_description}
             onChange={(e) => setNewArticle({ ...newArticle, sap_description: e.target.value })}

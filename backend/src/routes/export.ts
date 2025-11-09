@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma';
+import * as XLSX from 'xlsx';
 
 export const exportRouter = Router();
 
@@ -9,11 +10,10 @@ exportRouter.get('/json', async (req: Request, res: Response) => {
     const [
       articles,
       manufacturers,
-      instruments,
       variables,
       documents,
       images,
-      instrumentVariables,
+      articleVariables,
       analogOutputs,
       digitalIO,
       protocols,
@@ -25,14 +25,13 @@ exportRouter.get('/json', async (req: Request, res: Response) => {
     ] = await Promise.all([
       prisma.article.findMany(),
       prisma.manufacturer.findMany(),
-      prisma.instrument.findMany(),
       prisma.variableDict.findMany(),
       prisma.document.findMany(),
       prisma.image.findMany(),
-      prisma.instrumentVariable.findMany(),
+      prisma.articleVariable.findMany(),
       prisma.analogOutput.findMany(),
       prisma.digitalIO.findMany(),
-      prisma.instrumentProtocol.findMany(),
+      prisma.articleProtocol.findMany(),
       prisma.modbusRegister.findMany(),
       prisma.sDI12Command.findMany(),
       prisma.nMEASentence.findMany(),
@@ -47,11 +46,10 @@ exportRouter.get('/json', async (req: Request, res: Response) => {
       data: {
         articles,
         manufacturers,
-        instruments,
         variables,
         documents,
         images,
-        instrumentVariables,
+        articleVariables,
         analogOutputs,
         digitalIO,
         protocols,
@@ -72,25 +70,24 @@ exportRouter.get('/json', async (req: Request, res: Response) => {
   }
 });
 
-// GET export single instrument as JSON
+// GET export single article as JSON
 exportRouter.get('/json/:id', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const instrument = await prisma.instrument.findUnique({
-      where: { instrument_id: id },
+    const id = req.params.id;
+    const article = await prisma.article.findUnique({
+      where: { article_id: id },
       include: {
-        article: true,
         manufacturer: true,
         documents: true,
         images: true,
-        instrument_variables: {
+        article_variables: {
           include: {
             variable: true
           }
         },
         analog_outputs: true,
         digital_io: true,
-        instrument_protocols: true,
+        article_protocols: true,
         modbus_registers: true,
         sdi12_commands: true,
         nmea_sentences: true,
@@ -99,31 +96,30 @@ exportRouter.get('/json/:id', async (req: Request, res: Response) => {
       }
     });
 
-    if (!instrument) {
-      return res.status(404).json({ error: 'Instrument not found' });
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="instrument-${id}-${Date.now()}.json"`);
-    res.json(instrument);
+    res.setHeader('Content-Disposition', `attachment; filename="article-${id}-${Date.now()}.json"`);
+    res.json(article);
   } catch (error) {
     console.error('Export error:', error);
-    res.status(500).json({ error: 'Error exporting instrument' });
+    res.status(500).json({ error: 'Error exporting article' });
   }
 });
 
-// GET export as SQL dump
-exportRouter.get('/sql', async (req: Request, res: Response) => {
+// GET export as Excel (one table per sheet)
+exportRouter.get('/excel', async (req: Request, res: Response) => {
   try {
     // Obtener todos los datos
     const [
       articles,
       manufacturers,
-      instruments,
       variables,
       documents,
       images,
-      instrumentVariables,
+      articleVariables,
       analogOutputs,
       digitalIO,
       protocols,
@@ -135,14 +131,13 @@ exportRouter.get('/sql', async (req: Request, res: Response) => {
     ] = await Promise.all([
       prisma.article.findMany(),
       prisma.manufacturer.findMany(),
-      prisma.instrument.findMany(),
       prisma.variableDict.findMany(),
       prisma.document.findMany(),
       prisma.image.findMany(),
-      prisma.instrumentVariable.findMany(),
+      prisma.articleVariable.findMany(),
       prisma.analogOutput.findMany(),
       prisma.digitalIO.findMany(),
-      prisma.instrumentProtocol.findMany(),
+      prisma.articleProtocol.findMany(),
       prisma.modbusRegister.findMany(),
       prisma.sDI12Command.findMany(),
       prisma.nMEASentence.findMany(),
@@ -150,164 +145,350 @@ exportRouter.get('/sql', async (req: Request, res: Response) => {
       prisma.provenance.findMany()
     ]);
 
-    // Generar SQL INSERT statements
-    let sql = `-- InstrumentKB SQL Export (with SAP Integration)
+    // Crear nuevo workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Helper para convertir datos a formato Excel-friendly
+    const prepareForExcel = (data: any[]) => {
+      return data.map(item => {
+        const cleaned: any = {};
+        for (const [key, value] of Object.entries(item)) {
+          if (value instanceof Date) {
+            cleaned[key] = value.toISOString();
+          } else if (value === null || value === undefined) {
+            cleaned[key] = '';
+          } else if (typeof value === 'boolean') {
+            cleaned[key] = value ? 'TRUE' : 'FALSE';
+          } else {
+            cleaned[key] = value;
+          }
+        }
+        return cleaned;
+      });
+    };
+
+    // Agregar cada tabla como una hoja
+    if (articles.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(articles));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Articles');
+    }
+
+    if (manufacturers.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(manufacturers));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Manufacturers');
+    }
+
+    if (variables.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(variables));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Variables');
+    }
+
+    if (documents.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(documents));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Documents');
+    }
+
+    if (images.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(images));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Images');
+    }
+
+    if (articleVariables.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(articleVariables));
+      XLSX.utils.book_append_sheet(workbook, ws, 'ArticleVariables');
+    }
+
+    if (analogOutputs.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(analogOutputs));
+      XLSX.utils.book_append_sheet(workbook, ws, 'AnalogOutputs');
+    }
+
+    if (digitalIO.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(digitalIO));
+      XLSX.utils.book_append_sheet(workbook, ws, 'DigitalIO');
+    }
+
+    if (protocols.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(protocols));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Protocols');
+    }
+
+    if (modbusRegisters.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(modbusRegisters));
+      XLSX.utils.book_append_sheet(workbook, ws, 'ModbusRegisters');
+    }
+
+    if (sdi12Commands.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(sdi12Commands));
+      XLSX.utils.book_append_sheet(workbook, ws, 'SDI12Commands');
+    }
+
+    if (nmeaSentences.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(nmeaSentences));
+      XLSX.utils.book_append_sheet(workbook, ws, 'NMEASentences');
+    }
+
+    if (tags.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(tags));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Tags');
+    }
+
+    if (provenance.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(prepareForExcel(provenance));
+      XLSX.utils.book_append_sheet(workbook, ws, 'Provenance');
+    }
+
+    // Agregar una hoja de metadatos
+    const metadata = [{
+      exported_at: new Date().toISOString(),
+      version: '2.0',
+      sap_integration: 'true',
+      total_articles: articles.length,
+      total_manufacturers: manufacturers.length,
+      total_variables: variables.length
+    }];
+    const metaWs = XLSX.utils.json_to_sheet(metadata);
+    XLSX.utils.book_append_sheet(workbook, metaWs, 'Metadata');
+
+    // Generar el buffer
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="instrumentkb-export-${Date.now()}.xlsx"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Excel export error:', error);
+    res.status(500).json({ error: 'Error exporting to Excel' });
+  }
+});
+
+// GET export as SQL dump (PostgreSQL compatible)
+exportRouter.get('/sql', async (req: Request, res: Response) => {
+  try {
+    // Obtener todos los datos
+    const [
+      articles,
+      manufacturers,
+      variables,
+      documents,
+      images,
+      articleVariables,
+      analogOutputs,
+      digitalIO,
+      protocols,
+      modbusRegisters,
+      sdi12Commands,
+      nmeaSentences,
+      tags,
+      provenance
+    ] = await Promise.all([
+      prisma.article.findMany(),
+      prisma.manufacturer.findMany(),
+      prisma.variableDict.findMany(),
+      prisma.document.findMany(),
+      prisma.image.findMany(),
+      prisma.articleVariable.findMany(),
+      prisma.analogOutput.findMany(),
+      prisma.digitalIO.findMany(),
+      prisma.articleProtocol.findMany(),
+      prisma.modbusRegister.findMany(),
+      prisma.sDI12Command.findMany(),
+      prisma.nMEASentence.findMany(),
+      prisma.tag.findMany(),
+      prisma.provenance.findMany()
+    ]);
+
+    // Generar SQL INSERT statements compatible con PostgreSQL
+    let sql = `-- InstrumentKB SQL Export (PostgreSQL Compatible)
 -- Generated at: ${new Date().toISOString()}
 -- Version: 2.0
 -- 
+-- Instructions for importing:
+-- 1. Create database: CREATE DATABASE instrumentkb;
+-- 2. Run Prisma migrations: npx prisma migrate deploy
+-- 3. Import this file: psql -U postgres -d instrumentkb -f instrumentkb-export-XXXXX.sql
+--
+-- Or if you want to overwrite existing data:
+-- psql -U postgres -d instrumentkb -c "TRUNCATE articles, manufacturers, variables_dict, documents, images, article_variables, analog_outputs, digital_io, article_protocols, modbus_registers, sdi12_commands, nmea_sentences, tags, provenance CASCADE;"
+-- psql -U postgres -d instrumentkb -f instrumentkb-export-XXXXX.sql
+--
+
+BEGIN;
+
+-- Disable triggers to avoid constraint issues during import
+SET session_replication_role = replica;
 
 `;
 
     // Helper para escapar valores SQL
     const escapeSQLValue = (value: any): string => {
       if (value === null || value === undefined) return 'NULL';
-      if (typeof value === 'number') return value.toString();
+      if (typeof value === 'number') {
+        if (isNaN(value) || !isFinite(value)) return 'NULL';
+        return value.toString();
+      }
       if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
       if (value instanceof Date) return `'${value.toISOString()}'`;
-      return `'${value.toString().replace(/'/g, "''")}'`;
+      // Escapar comillas simples y caracteres especiales
+      return `'${value.toString().replace(/'/g, "''").replace(/\\/g, '\\\\')}'`;
     };
 
-    // Articles (PRIMERO - es el nexo con SAP)
-    if (articles.length > 0) {
-      sql += '\n-- Articles (SAP Integration)\n';
-      articles.forEach(a => {
-        sql += `INSERT INTO articles (article_id, sap_itemcode, sap_description, family, subfamily, internal_notes, active, created_at, updated_at) VALUES (${escapeSQLValue(a.article_id)}, ${escapeSQLValue(a.sap_itemcode)}, ${escapeSQLValue(a.sap_description)}, ${escapeSQLValue(a.family)}, ${escapeSQLValue(a.subfamily)}, ${escapeSQLValue(a.internal_notes)}, ${escapeSQLValue(a.active)}, ${escapeSQLValue(a.created_at)}, ${escapeSQLValue(a.updated_at)});\n`;
+    // Helper para generar INSERT con todos los campos
+    const generateInsert = (tableName: string, items: any[]) => {
+      if (items.length === 0) return '';
+      
+      let sql = `\n-- ${tableName}\n`;
+      const fields = Object.keys(items[0]);
+      
+      items.forEach(item => {
+        const values = fields.map(field => escapeSQLValue(item[field])).join(', ');
+        sql += `INSERT INTO ${tableName} (${fields.join(', ')}) VALUES (${values});\n`;
       });
-    }
+      
+      return sql;
+    };
 
-    // Manufacturers
+    // Orden de inserción respetando dependencias de foreign keys
+    
+    // 1. Manufacturers (no tiene dependencias)
     if (manufacturers.length > 0) {
-      sql += '\n-- Manufacturers\n';
-      manufacturers.forEach(m => {
-        sql += `INSERT INTO manufacturers (manufacturer_id, name, country, website, support_email, notes) VALUES (${m.manufacturer_id}, ${escapeSQLValue(m.name)}, ${escapeSQLValue(m.country)}, ${escapeSQLValue(m.website)}, ${escapeSQLValue(m.support_email)}, ${escapeSQLValue(m.notes)});\n`;
-      });
+      sql += generateInsert('manufacturers', manufacturers);
     }
 
-    // Variables
+    // 2. Variables (no tiene dependencias)
     if (variables.length > 0) {
-      sql += '\n-- Variables Dictionary\n';
-      variables.forEach(v => {
-        sql += `INSERT INTO variables_dict (variable_id, name, unit_default, description) VALUES (${v.variable_id}, ${escapeSQLValue(v.name)}, ${escapeSQLValue(v.unit_default)}, ${escapeSQLValue(v.description)});\n`;
-      });
+      sql += generateInsert('variables_dict', variables);
     }
 
-    // Instruments
-    if (instruments.length > 0) {
-      sql += '\n-- Instruments\n';
-      instruments.forEach(i => {
-        const fields = Object.keys(i).join(', ');
-        const values = Object.values(i).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO instruments (${fields}) VALUES (${values});\n`;
-      });
+    // 3. Articles (depende de manufacturers)
+    if (articles.length > 0) {
+      sql += generateInsert('articles', articles);
     }
 
-    // Documents
+    // 4. Documents (depende de articles)
     if (documents.length > 0) {
-      sql += '\n-- Documents\n';
-      documents.forEach(d => {
-        const fields = Object.keys(d).join(', ');
-        const values = Object.values(d).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO documents (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('documents', documents);
     }
 
-    // Images
+    // 5. Images (depende de articles)
     if (images.length > 0) {
-      sql += '\n-- Images\n';
-      images.forEach(i => {
-        const fields = Object.keys(i).join(', ');
-        const values = Object.values(i).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO images (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('images', images);
     }
 
-    // Instrument Variables
-    if (instrumentVariables.length > 0) {
-      sql += '\n-- Instrument Variables\n';
-      instrumentVariables.forEach(iv => {
-        const fields = Object.keys(iv).join(', ');
-        const values = Object.values(iv).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO instrument_variables (${fields}) VALUES (${values});\n`;
-      });
+    // 6. Article Variables (depende de articles y variables)
+    if (articleVariables.length > 0) {
+      sql += generateInsert('article_variables', articleVariables);
     }
 
-    // Analog Outputs
+    // 7. Analog Outputs (depende de articles)
     if (analogOutputs.length > 0) {
-      sql += '\n-- Analog Outputs\n';
-      analogOutputs.forEach(ao => {
-        const fields = Object.keys(ao).join(', ');
-        const values = Object.values(ao).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO analog_outputs (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('analog_outputs', analogOutputs);
     }
 
-    // Digital I/O
+    // 8. Digital I/O (depende de articles)
     if (digitalIO.length > 0) {
-      sql += '\n-- Digital I/O\n';
-      digitalIO.forEach(dio => {
-        const fields = Object.keys(dio).join(', ');
-        const values = Object.values(dio).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO digital_io (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('digital_io', digitalIO);
     }
 
-    // Protocols
+    // 9. Protocols (depende de articles)
     if (protocols.length > 0) {
-      sql += '\n-- Instrument Protocols\n';
-      protocols.forEach(p => {
-        const fields = Object.keys(p).join(', ');
-        const values = Object.values(p).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO instrument_protocols (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('article_protocols', protocols);
     }
 
-    // Modbus Registers
+    // 10. Modbus Registers (depende de articles y documents)
     if (modbusRegisters.length > 0) {
-      sql += '\n-- Modbus Registers\n';
-      modbusRegisters.forEach(mr => {
-        const fields = Object.keys(mr).join(', ');
-        const values = Object.values(mr).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO modbus_registers (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('modbus_registers', modbusRegisters);
     }
 
-    // SDI-12 Commands
+    // 11. SDI-12 Commands (depende de articles y documents)
     if (sdi12Commands.length > 0) {
-      sql += '\n-- SDI-12 Commands\n';
-      sdi12Commands.forEach(sdi => {
-        const fields = Object.keys(sdi).join(', ');
-        const values = Object.values(sdi).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO sdi12_commands (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('sdi12_commands', sdi12Commands);
     }
 
-    // NMEA Sentences
+    // 12. NMEA Sentences (depende de articles y documents)
     if (nmeaSentences.length > 0) {
-      sql += '\n-- NMEA Sentences\n';
-      nmeaSentences.forEach(nmea => {
-        const fields = Object.keys(nmea).join(', ');
-        const values = Object.values(nmea).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO nmea_sentences (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('nmea_sentences', nmeaSentences);
     }
 
-    // Tags
+    // 13. Tags (depende de articles)
     if (tags.length > 0) {
-      sql += '\n-- Tags\n';
-      tags.forEach(t => {
-        sql += `INSERT INTO tags (tag_id, instrument_id, tag) VALUES (${t.tag_id}, ${t.instrument_id}, ${escapeSQLValue(t.tag)});\n`;
-      });
+      sql += generateInsert('tags', tags);
     }
 
-    // Provenance
+    // 14. Provenance (depende de articles y documents)
     if (provenance.length > 0) {
-      sql += '\n-- Provenance\n';
-      provenance.forEach(p => {
-        const fields = Object.keys(p).join(', ');
-        const values = Object.values(p).map(escapeSQLValue).join(', ');
-        sql += `INSERT INTO provenance (${fields}) VALUES (${values});\n`;
-      });
+      sql += generateInsert('provenance', provenance);
     }
+
+    // Actualizar secuencias de autoincremento
+    sql += `
+-- Update sequences to avoid conflicts with future inserts
+`;
+    
+    if (manufacturers.length > 0) {
+      sql += `SELECT setval('manufacturers_manufacturer_id_seq', (SELECT MAX(manufacturer_id) FROM manufacturers));\n`;
+    }
+    if (variables.length > 0) {
+      sql += `SELECT setval('variables_dict_variable_id_seq', (SELECT MAX(variable_id) FROM variables_dict));\n`;
+    }
+    if (documents.length > 0) {
+      sql += `SELECT setval('documents_document_id_seq', (SELECT MAX(document_id) FROM documents));\n`;
+    }
+    if (images.length > 0) {
+      sql += `SELECT setval('images_image_id_seq', (SELECT MAX(image_id) FROM images));\n`;
+    }
+    if (articleVariables.length > 0) {
+      sql += `SELECT setval('article_variables_art_var_id_seq', (SELECT MAX(art_var_id) FROM article_variables));\n`;
+    }
+    if (analogOutputs.length > 0) {
+      sql += `SELECT setval('analog_outputs_analog_out_id_seq', (SELECT MAX(analog_out_id) FROM analog_outputs));\n`;
+    }
+    if (digitalIO.length > 0) {
+      sql += `SELECT setval('digital_io_dio_id_seq', (SELECT MAX(dio_id) FROM digital_io));\n`;
+    }
+    if (protocols.length > 0) {
+      sql += `SELECT setval('article_protocols_art_proto_id_seq', (SELECT MAX(art_proto_id) FROM article_protocols));\n`;
+    }
+    if (modbusRegisters.length > 0) {
+      sql += `SELECT setval('modbus_registers_modbus_id_seq', (SELECT MAX(modbus_id) FROM modbus_registers));\n`;
+    }
+    if (sdi12Commands.length > 0) {
+      sql += `SELECT setval('sdi12_commands_sdi12_id_seq', (SELECT MAX(sdi12_id) FROM sdi12_commands));\n`;
+    }
+    if (nmeaSentences.length > 0) {
+      sql += `SELECT setval('nmea_sentences_nmea_id_seq', (SELECT MAX(nmea_id) FROM nmea_sentences));\n`;
+    }
+    if (tags.length > 0) {
+      sql += `SELECT setval('tags_tag_id_seq', (SELECT MAX(tag_id) FROM tags));\n`;
+    }
+    if (provenance.length > 0) {
+      sql += `SELECT setval('provenance_prov_id_seq', (SELECT MAX(prov_id) FROM provenance));\n`;
+    }
+
+    sql += `
+-- Re-enable triggers
+SET session_replication_role = DEFAULT;
+
+COMMIT;
+
+-- Export completed successfully
+-- Total records:
+--   Articles: ${articles.length}
+--   Manufacturers: ${manufacturers.length}
+--   Variables: ${variables.length}
+--   Documents: ${documents.length}
+--   Images: ${images.length}
+--   Article Variables: ${articleVariables.length}
+--   Analog Outputs: ${analogOutputs.length}
+--   Digital I/O: ${digitalIO.length}
+--   Protocols: ${protocols.length}
+--   Modbus Registers: ${modbusRegisters.length}
+--   SDI-12 Commands: ${sdi12Commands.length}
+--   NMEA Sentences: ${nmeaSentences.length}
+--   Tags: ${tags.length}
+--   Provenance: ${provenance.length}
+`;
+
 
     res.setHeader('Content-Type', 'application/sql');
     res.setHeader('Content-Disposition', `attachment; filename="instrumentkb-export-${Date.now()}.sql"`);

@@ -126,9 +126,9 @@ function ArticleList() {
       <Stack gap="lg">
         <Group justify="space-between">
           <Title order={2}>📦 Catálogo de Artículos SAP</Title>
-          <Button onClick={() => navigate('/new')}>
+{/*           <Button onClick={() => navigate('/new')}>
             + Nuevo Artículo
-          </Button>
+          </Button> */}
         </Group>
 
         {error && (
