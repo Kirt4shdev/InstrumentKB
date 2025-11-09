@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
   Title,
@@ -20,21 +20,44 @@ import {
   Modal,
   Text,
   Badge,
+  Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconTrash, IconPlus } from '@tabler/icons-react';
+import { IconTrash, IconPlus, IconInfoCircle } from '@tabler/icons-react';
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { 
   getArticleTypes, 
   getManufacturers, 
   getVariables,
-  createArticle 
+  createArticle,
+  getArticle,
+  updateArticle,
 } from '../api';
 import { ArticleTypeOption } from '../types';
 
+// Componente helper para labels con tooltip
+const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip: string }) => (
+  <Group gap={4}>
+    <Text size="sm" fw={500}>{label}</Text>
+    <Tooltip 
+      label={tooltip} 
+      multiline 
+      w={300}
+      withArrow
+      transitionProps={{ duration: 200 }}
+    >
+      <ActionIcon size="xs" variant="subtle" color="blue">
+        <IconInfoCircle size={14} />
+      </ActionIcon>
+    </Tooltip>
+  </Group>
+);
+
 function ArticleNew() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>(); // Para detectar si estamos editando
+  const isEditMode = !!id;
   const [articleTypes, setArticleTypes] = useState<ArticleTypeOption[]>([]);
   const [manufacturers, setManufacturers] = useState<any[]>([]);
   const [variables, setVariables] = useState<any[]>([]);
@@ -114,7 +137,74 @@ function ArticleNew() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    if (isEditMode && id) {
+      loadArticleData(id);
+    }
+  }, [id]);
+
+  const loadArticleData = async (articleId: string) => {
+    try {
+      setLoading(true);
+      const response = await getArticle(articleId);
+      const article = response.data;
+      
+      // Poblar el formulario con los datos del artículo
+      form.setValues({
+        sap_itemcode: article.sap_itemcode || '',
+        sap_description: article.sap_description || '',
+        article_type: article.article_type || '',
+        category: article.category || '',
+        family: article.family || '',
+        subfamily: article.subfamily || '',
+        manufacturer_id: article.manufacturer_id?.toString() || '',
+        model: article.model || '',
+        variant: article.variant || '',
+        power_supply_min_v: article.power_supply_min_v || '',
+        power_supply_max_v: article.power_supply_max_v || '',
+        power_consumption_typ_w: article.power_consumption_typ_w || '',
+        current_max_a: article.current_max_a || '',
+        voltage_rating_v: article.voltage_rating_v || '',
+        ip_rating: article.ip_rating || '',
+        dimensions_mm: article.dimensions_mm || '',
+        weight_g: article.weight_g || '',
+        length_m: article.length_m || '',
+        diameter_mm: article.diameter_mm || '',
+        material: article.material || '',
+        color: article.color || '',
+        oper_temp_min_c: article.oper_temp_min_c || '',
+        oper_temp_max_c: article.oper_temp_max_c || '',
+        storage_temp_min_c: article.storage_temp_min_c || '',
+        storage_temp_max_c: article.storage_temp_max_c || '',
+        oper_humidity_min_pct: article.oper_humidity_min_pct || '',
+        oper_humidity_max_pct: article.oper_humidity_max_pct || '',
+        altitude_max_m: article.altitude_max_m || '',
+        emc_compliance: article.emc_compliance || '',
+        certifications: article.certifications || '',
+        first_release_year: article.first_release_year || '',
+        last_revision_year: article.last_revision_year || '',
+        internal_notes: article.internal_notes || '',
+        active: article.active ?? true,
+      });
+      
+      // Poblar las relaciones
+      if (article.article_variables) setArticleVariables(article.article_variables);
+      if (article.article_protocols) setArticleProtocols(article.article_protocols);
+      if (article.analog_outputs) setAnalogOutputs(article.analog_outputs);
+      if (article.digital_io) setDigitalIO(article.digital_io);
+      if (article.modbus_registers) setModbusRegisters(article.modbus_registers);
+      if (article.sdi12_commands) setSdi12Commands(article.sdi12_commands);
+      if (article.nmea_sentences) setNmeaSentences(article.nmea_sentences);
+      if (article.documents) setDocuments(article.documents);
+      if (article.images) setImages(article.images);
+      if (article.tags) setTags(article.tags.map((t: any) => t.tag));
+      
+    } catch (error) {
+      console.error('Error loading article:', error);
+      setError('Error al cargar el artículo para editar');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -198,14 +288,20 @@ function ArticleNew() {
         data.tags = tags;
       }
       
-      const response = await createArticle(data);
+      // Crear o actualizar según el modo
+      if (isEditMode && id) {
+        await updateArticle(id, data);
+      } else {
+        await createArticle(data);
+      }
+      
       setSuccess(true);
       
       setTimeout(() => {
         navigate('/');
       }, 1500);
     } catch (error: any) {
-      console.error('Error creating article:', error);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} article:`, error);
       
       // Manejo de errores específicos
       if (error.response) {
@@ -384,7 +480,7 @@ function ArticleNew() {
     <Container size="xl" py="xl">
       <Stack gap="lg">
         <Group justify="space-between">
-          <Title order={2}>➕ Nuevo Artículo</Title>
+          <Title order={2}>{isEditMode ? '✏️ Editar Artículo' : '➕ Nuevo Artículo'}</Title>
           <Button variant="subtle" onClick={() => navigate('/')}>
             Cancelar
           </Button>
@@ -407,7 +503,7 @@ function ArticleNew() {
             title="¡Éxito!"
             withCloseButton={false}
           >
-            ¡Artículo creado exitosamente! Redirigiendo...
+            {isEditMode ? '¡Artículo actualizado exitosamente! Redirigiendo...' : '¡Artículo creado exitosamente! Redirigiendo...'}
           </Notification>
         )}
 
@@ -449,16 +545,25 @@ function ArticleNew() {
                       <Grid>
                         <Grid.Col span={12}>
                           <TextInput
-                            label="SAP ItemCode"
+                            label={
+                              <LabelWithTooltip
+                                label="SAP ItemCode"
+                                tooltip="Código único del artículo en SAP Business One. Ejemplo: 'A1000123'. Este código debe ser único en todo el sistema y se usa para sincronizar con SAP."
+                              />
+                            }
                             placeholder="A1000123"
-                            description="Código del artículo en SAP"
                             required
                             {...form.getInputProps('sap_itemcode')}
                           />
                         </Grid.Col>
                         <Grid.Col span={12}>
                           <TextInput
-                            label="Descripción SAP"
+                            label={
+                              <LabelWithTooltip
+                                label="Descripción SAP"
+                                tooltip="Descripción completa y detallada del artículo tal como aparecerá en SAP. Debe ser clara y descriptiva para facilitar búsquedas. Ejemplo: 'Sensor de temperatura PT100 con rango -50 a 200°C'."
+                              />
+                            }
                             placeholder="Descripción completa del artículo"
                             required
                             {...form.getInputProps('sap_description')}
@@ -466,7 +571,12 @@ function ArticleNew() {
                         </Grid.Col>
                         <Grid.Col span={6}>
                           <Select
-                            label="Tipo de Artículo"
+                            label={
+                              <LabelWithTooltip
+                                label="Tipo de Artículo"
+                                tooltip="Categoría principal del artículo según la clasificación de la empresa. Determina qué campos técnicos estarán disponibles. Por ejemplo, INSTRUMENTO habilita variables, protocolos, Modbus, etc."
+                              />
+                            }
                             placeholder="Selecciona un tipo"
                             data={articleTypes.map(t => ({ value: t.value, label: t.label }))}
                             required
@@ -476,21 +586,36 @@ function ArticleNew() {
                         </Grid.Col>
                         <Grid.Col span={6}>
                           <TextInput
-                            label="Categoría"
+                            label={
+                              <LabelWithTooltip
+                                label="Categoría"
+                                tooltip="Sub-clasificación específica dentro del tipo de artículo. Opcional. Ejemplo: Para tipo INSTRUMENTO, categoría podría ser 'Temperatura', 'Presión', 'Caudal', etc."
+                              />
+                            }
                             placeholder="Sub-clasificación específica"
                             {...form.getInputProps('category')}
                           />
                         </Grid.Col>
                         <Grid.Col span={6}>
                           <TextInput
-                            label="Familia"
+                            label={
+                              <LabelWithTooltip
+                                label="Familia"
+                                tooltip="Agrupación de artículos similares. Ejemplo: 'Sensores PT100', 'Cables Ethernet', 'Soportes metálicos'. Útil para filtrar y organizar el catálogo."
+                              />
+                            }
                             placeholder="Familia del artículo"
                             {...form.getInputProps('family')}
                           />
                         </Grid.Col>
                         <Grid.Col span={6}>
                           <TextInput
-                            label="Subfamilia"
+                            label={
+                              <LabelWithTooltip
+                                label="Subfamilia"
+                                tooltip="Subdivisión de la familia para clasificación más específica. Ejemplo: Dentro de familia 'Sensores PT100', subfamilia podría ser 'PT100 clase A' o 'PT100 clase B'."
+                              />
+                            }
                             placeholder="Subfamilia del artículo"
                             {...form.getInputProps('subfamily')}
                           />
@@ -503,7 +628,12 @@ function ArticleNew() {
                       <Grid>
                         <Grid.Col span={6}>
                           <Select
-                            label="Fabricante"
+                            label={
+                              <LabelWithTooltip
+                                label="Fabricante"
+                                tooltip="Empresa que fabrica el artículo. Selecciona de la lista de fabricantes registrados. Si no existe, primero debes crearlo en el módulo de Fabricantes."
+                              />
+                            }
                             placeholder="Selecciona un fabricante"
                             data={manufacturers.map(m => ({ 
                               value: m.manufacturer_id.toString(), 
@@ -516,14 +646,24 @@ function ArticleNew() {
                         </Grid.Col>
                         <Grid.Col span={3}>
                           <TextInput
-                            label="Modelo"
+                            label={
+                              <LabelWithTooltip
+                                label="Modelo"
+                                tooltip="Modelo específico del fabricante. Ejemplo: 'PT100-A', 'RJ45-CAT6', 'MX-2000'. Tal como aparece en el datasheet del fabricante."
+                              />
+                            }
                             placeholder="Modelo"
                             {...form.getInputProps('model')}
                           />
                         </Grid.Col>
                         <Grid.Col span={3}>
                           <TextInput
-                            label="Variante"
+                            label={
+                              <LabelWithTooltip
+                                label="Variante"
+                                tooltip="Variación del modelo base si existe. Ejemplo: 'con display', 'versión corta', 'IP67'. Útil cuando un mismo modelo tiene versiones diferentes."
+                              />
+                            }
                             placeholder="Variante"
                             {...form.getInputProps('variant')}
                           />
@@ -1563,7 +1703,7 @@ function ArticleNew() {
                   Cancelar
                 </Button>
                 <Button type="submit" loading={loading}>
-                  Crear Artículo
+                  {isEditMode ? 'Actualizar Artículo' : 'Crear Artículo'}
                 </Button>
               </Group>
             </form>

@@ -13,8 +13,12 @@ import {
   Text,
   Stack,
   Paper,
+  ActionIcon,
+  Modal,
+  Notification,
 } from '@mantine/core';
-import { getArticles, getArticleTypes } from '../api';
+import { IconEdit, IconTrash, IconEye } from '@tabler/icons-react';
+import { getArticles, getArticleTypes, deleteArticle } from '../api';
 import { Article, ArticleTypeOption } from '../types';
 
 function ArticleList() {
@@ -24,6 +28,11 @@ function ArticleList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [articleTypes, setArticleTypes] = useState<ArticleTypeOption[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     loadArticleTypes();
@@ -59,6 +68,39 @@ function ArticleList() {
     loadArticles();
   };
 
+  const handleDeleteClick = (article: Article, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setArticleToDelete(article);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!articleToDelete) return;
+    
+    try {
+      setDeleting(true);
+      setError(null);
+      await deleteArticle(articleToDelete.article_id);
+      setSuccess(`Artículo "${articleToDelete.article_id}" eliminado correctamente`);
+      setDeleteModalOpen(false);
+      setArticleToDelete(null);
+      loadArticles(); // Recargar la lista
+      
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      console.error('Error deleting article:', error);
+      setError(`Error al eliminar: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleEditClick = (articleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/edit/${articleId}`);
+  };
+
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       INSTRUMENTO: 'blue',
@@ -88,6 +130,28 @@ function ArticleList() {
             + Nuevo Artículo
           </Button>
         </Group>
+
+        {error && (
+          <Notification
+            color="red"
+            title="Error"
+            onClose={() => setError(null)}
+            withCloseButton
+          >
+            {error}
+          </Notification>
+        )}
+
+        {success && (
+          <Notification
+            color="green"
+            title="Éxito"
+            onClose={() => setSuccess(null)}
+            withCloseButton
+          >
+            {success}
+          </Notification>
+        )}
 
         <Paper p="md" withBorder>
           <Group>
@@ -135,15 +199,12 @@ function ArticleList() {
                   <Table.Th>Fabricante</Table.Th>
                   <Table.Th>Modelo</Table.Th>
                   <Table.Th>Estado</Table.Th>
+                  <Table.Th style={{ width: 120 }}>Acciones</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {articles.map((article) => (
-                  <Table.Tr
-                    key={article.article_id}
-                    onClick={() => navigate(`/article/${article.article_id}`)}
-                    style={{ cursor: 'pointer' }}
-                  >
+                  <Table.Tr key={article.article_id}>
                     <Table.Td>
                       <Text fw={500}>{article.article_id}</Text>
                       {article.sap_itemcode && (
@@ -172,6 +233,34 @@ function ArticleList() {
                         {article.active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        <ActionIcon
+                          variant="light"
+                          color="blue"
+                          onClick={() => navigate(`/article/${article.article_id}`)}
+                          title="Ver detalles"
+                        >
+                          <IconEye size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="light"
+                          color="orange"
+                          onClick={(e) => handleEditClick(article.article_id, e)}
+                          title="Editar"
+                        >
+                          <IconEdit size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="light"
+                          color="red"
+                          onClick={(e) => handleDeleteClick(article, e)}
+                          title="Eliminar"
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    </Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Tbody>
@@ -183,6 +272,55 @@ function ArticleList() {
           Total: {articles.length} artículo(s)
         </Text>
       </Stack>
+
+      {/* Modal de confirmación de eliminación */}
+      <Modal
+        opened={deleteModalOpen}
+        onClose={() => !deleting && setDeleteModalOpen(false)}
+        title="⚠️ Confirmar eliminación"
+        centered
+      >
+        <Stack gap="md">
+          <Text>
+            ¿Estás seguro de que deseas eliminar el artículo?
+          </Text>
+          {articleToDelete && (
+            <Paper p="sm" withBorder bg="gray.0">
+              <Text size="sm" fw={600}>{articleToDelete.article_id}</Text>
+              <Text size="sm">{articleToDelete.sap_description}</Text>
+              {articleToDelete.sap_itemcode && (
+                <Text size="xs" c="dimmed">SAP: {articleToDelete.sap_itemcode}</Text>
+              )}
+            </Paper>
+          )}
+          <Text size="sm" c="red">
+            ⚠️ Esta acción no se puede deshacer. Se eliminarán también todos los datos relacionados (variables, protocolos, registros Modbus, etc.).
+          </Text>
+          
+          {error && (
+            <Text size="sm" c="red">
+              {error}
+            </Text>
+          )}
+          
+          <Group justify="flex-end">
+            <Button
+              variant="subtle"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="red"
+              onClick={handleDeleteConfirm}
+              loading={deleting}
+            >
+              Eliminar
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Container>
   );
 }

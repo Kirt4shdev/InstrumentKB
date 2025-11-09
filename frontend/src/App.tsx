@@ -37,6 +37,7 @@ function App() {
         <Routes>
           <Route path="/" element={<ArticleList />} />
           <Route path="/new" element={<ArticleNew />} />
+          <Route path="/edit/:id" element={<ArticleNew />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
         </Routes>
       </AppShell.Main>
