@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: instrumentkb-db
+    environment:
+      POSTGRES_USER: kb_user
+      POSTGRES_PASSWORD: kb_pass
+      POSTGRES_DB: instruments
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb_user -d instruments"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - instrumentkb-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: instrumentkb-backend
+    environment:
+      DATABASE_URL: postgresql://kb_user:kb_pass@db:5432/instruments
+      STORAGE_DRIVER: local
+      STORAGE_PATH: /app/uploads
+      PORT: 3001
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - ./backend/uploads:/app/uploads
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - instrumentkb-network
+    command: sh -c "
+      echo '⏳ Esperando PostgreSQL...' &&
+      sleep 3 &&
+      echo '🔄 Aplicando migraciones...' &&
+      npx prisma migrate deploy &&
+      echo '🌱 Cargando datos de ejemplo...' &&
+      npm run seed || true &&
+      echo '🚀 Iniciando backend con hot-reload...' &&
+      npm run dev
+      "
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: instrumentkb-frontend
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+      DOCKER_ENV: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - instrumentkb-network
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_data:
+
+networks:
+  instrumentkb-network:
+    driver: bridge
