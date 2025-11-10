@@ -27,8 +27,8 @@ docker-compose exec -T backend npx prisma migrate deploy
 
 echo InstrumentKB esta listo!
 echo.
-echo Frontend: http://localhost:3000
-echo Backend API: http://localhost:3002
+echo Aplicacion: http://localhost:8080
+echo Backend API: http://localhost:3002 (interno)
 echo Database: postgresql://kb_user:kb_pass@localhost:5434/instruments
 echo.
 echo Para ver los logs: docker-compose logs -f

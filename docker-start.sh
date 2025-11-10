@@ -105,17 +105,17 @@ for i in {1..60}; do
     fi
 done
 
-# Esperar Frontend
-print_color $BLUE "   ⚛️  Frontend..."
+# Esperar Nginx
+print_color $BLUE "   🌐 Nginx..."
 for i in {1..60}; do
-    if curl -s http://localhost:3000 &>/dev/null; then
-        print_color $GREEN "   ✅ Frontend está listo"
+    if curl -s http://localhost:8080 &>/dev/null; then
+        print_color $GREEN "   ✅ Nginx está listo"
         break
     fi
     sleep 2
     if [ $i -eq 60 ]; then
-        print_color $RED "   ❌ Timeout esperando Frontend"
-        print_color $YELLOW "   📋 Ver logs: docker-compose logs frontend"
+        print_color $RED "   ❌ Timeout esperando Nginx"
+        print_color $YELLOW "   📋 Ver logs: docker-compose logs nginx"
         exit 1
     fi
 done
@@ -124,9 +124,9 @@ echo ""
 print_color $GREEN "🎉 ¡InstrumentKB está listo!"
 echo ""
 print_color $BLUE "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-print_color $GREEN "📱 Frontend:  http://localhost:3000"
-print_color $GREEN "🔌 Backend:   http://localhost:3002"
-print_color $GREEN "🗄️  Database:  localhost:5434"
+print_color $GREEN "🌐 Aplicación: http://localhost:8080"
+print_color $GREEN "🔌 Backend:    http://localhost:3002 (interno)"
+print_color $GREEN "🗄️  Database:   localhost:5434"
 print_color $BLUE "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 print_color $YELLOW "📝 Comandos útiles:"
@@ -163,17 +163,17 @@ else
     print_color $YELLOW "⚠️  Test 3: No hay fabricantes"
 fi
 
-# Test 4: Frontend responde
-if curl -s http://localhost:3000 | grep -q "InstrumentKB\|root"; then
-    print_color $GREEN "✅ Test 4: Frontend responde correctamente"
+# Test 4: Nginx/Frontend responde
+if curl -s http://localhost:8080 | grep -q "InstrumentKB\|root"; then
+    print_color $GREEN "✅ Test 4: Aplicación responde correctamente"
 else
-    print_color $RED "❌ Test 4: Frontend no responde"
+    print_color $RED "❌ Test 4: Aplicación no responde"
 fi
 
 echo ""
 print_color $GREEN "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 print_color $GREEN "✅ Todos los tests completados"
-print_color $GREEN "🌐 Abre http://localhost:3000 en tu navegador"
+print_color $GREEN "🌐 Abre http://localhost:8080 en tu navegador"
 print_color $GREEN "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

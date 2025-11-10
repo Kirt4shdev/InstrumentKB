@@ -20,9 +20,10 @@ import {
 import { 
   IconArrowLeft, 
   IconEdit,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { getArticle } from '../api';
-import { Article } from '../types';
+import { Article, ArticleVariable, ArticleProtocol, Tag } from '../types';
 
 function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -289,7 +290,7 @@ function ArticleDetail() {
               Variables Medidas
             </Title>
             <Divider mb="xs" />
-            <Table className="corporate-table" size="xs">
+            <Table className="corporate-table">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Variable</Table.Th>
@@ -300,7 +301,7 @@ function ArticleDetail() {
                 </Table.Tr>
               </Table.Thead>
                 <Table.Tbody>
-                  {article.article_variables.map((av) => (
+                  {article.article_variables.map((av: ArticleVariable) => (
                     <Table.Tr key={av.art_var_id}>
                       <Table.Td>
                         <Badge variant="light" size="xs" color="violet">
@@ -343,7 +344,7 @@ function ArticleDetail() {
               Protocolos de Comunicación
             </Title>
             <Divider mb="xs" />
-            <Table className="corporate-table" size="xs">
+            <Table className="corporate-table">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Tipo</Table.Th>
@@ -353,7 +354,7 @@ function ArticleDetail() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {article.article_protocols.map((proto) => (
+                {article.article_protocols.map((proto: ArticleProtocol) => (
                   <Table.Tr key={proto.art_proto_id}>
                     <Table.Td>
                       <Badge variant="light" size="xs" color="blue">
@@ -394,7 +395,7 @@ function ArticleDetail() {
             </Title>
             <Divider mb="xs" />
             <Group gap="xs">
-              {article.tags.map((tag, index) => (
+              {article.tags.map((tag: Tag) => (
                 <Badge 
                   key={tag.tag_id} 
                   variant="light"
@@ -422,7 +423,9 @@ function ArticleDetail() {
                   variant="light" 
                   size="xs"
                   color={
-                    article.current_stock !== null && article.min_stock !== null && article.current_stock < article.min_stock
+                    article.current_stock !== null && article.current_stock !== undefined && 
+                    article.min_stock !== null && article.min_stock !== undefined && 
+                    article.current_stock < article.min_stock
                       ? 'red'
                       : 'teal'
                   }

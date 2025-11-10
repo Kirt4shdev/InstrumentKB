@@ -63,16 +63,16 @@ echo ================================
 echo   InstrumentKB esta listo!
 echo ================================
 echo.
-echo Frontend:  http://localhost:3000
-echo Backend:   http://localhost:3002
-echo Database:  localhost:5434
+echo Aplicacion: http://localhost:8080
+echo Backend:    http://localhost:3002 (interno)
+echo Database:   localhost:5434
 echo.
 echo Comandos utiles:
 echo   Ver logs:    docker-compose logs -f
 echo   Parar:       docker-compose down
 echo   Reiniciar:   docker-compose restart
 echo.
-echo Abre http://localhost:3000 en tu navegador
+echo Abre http://localhost:8080 en tu navegador
 echo.
 
 pause
