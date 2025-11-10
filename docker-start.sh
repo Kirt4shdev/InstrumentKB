@@ -93,7 +93,7 @@ done
 # Esperar Backend
 print_color $BLUE "   🔧 Backend..."
 for i in {1..60}; do
-    if curl -s http://localhost:3001/api/health &>/dev/null; then
+    if curl -s http://localhost:3002/api/health &>/dev/null; then
         print_color $GREEN "   ✅ Backend está listo"
         break
     fi
@@ -125,8 +125,8 @@ print_color $GREEN "🎉 ¡InstrumentKB está listo!"
 echo ""
 print_color $BLUE "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 print_color $GREEN "📱 Frontend:  http://localhost:3000"
-print_color $GREEN "🔌 Backend:   http://localhost:3001"
-print_color $GREEN "🗄️  Database:  localhost:5432"
+print_color $GREEN "🔌 Backend:   http://localhost:3002"
+print_color $GREEN "🗄️  Database:  localhost:5434"
 print_color $BLUE "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 print_color $YELLOW "📝 Comandos útiles:"
@@ -141,14 +141,14 @@ print_color $BLUE "🧪 Ejecutando tests básicos..."
 echo ""
 
 # Test 1: Health check backend
-if curl -s http://localhost:3001/api/health | grep -q "ok"; then
+if curl -s http://localhost:3002/api/health | grep -q "ok"; then
     print_color $GREEN "✅ Test 1: Backend health check OK"
 else
     print_color $RED "❌ Test 1: Backend health check FAILED"
 fi
 
 # Test 2: Artículos SAP
-ARTICLES=$(curl -s http://localhost:3001/api/articles | grep -o "INS-" | wc -l)
+ARTICLES=$(curl -s http://localhost:3002/api/articles | grep -o "INS-" | wc -l)
 if [ "$ARTICLES" -gt 0 ]; then
     print_color $GREEN "✅ Test 2: Artículos SAP cargados ($ARTICLES encontrados)"
 else
@@ -156,7 +156,7 @@ else
 fi
 
 # Test 3: Fabricantes
-MANUFACTURERS=$(curl -s http://localhost:3001/api/manufacturers | grep -o "manufacturer_id" | wc -l)
+MANUFACTURERS=$(curl -s http://localhost:3002/api/manufacturers | grep -o "manufacturer_id" | wc -l)
 if [ "$MANUFACTURERS" -gt 0 ]; then
     print_color $GREEN "✅ Test 3: Fabricantes cargados ($MANUFACTURERS encontrados)"
 else

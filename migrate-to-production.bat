@@ -7,13 +7,13 @@ echo.
 
 REM Paso 1: Exportar datos locales
 echo 1. Exportando datos del entorno local...
-curl -o local-export.json http://localhost:3001/api/export/json
+curl -o local-export.json http://localhost:3002/api/export/json
 echo Datos exportados a local-export.json
 echo.
 
 REM Paso 2: Exportar SQL
 echo 2. Exportando SQL...
-curl -o local-export.sql http://localhost:3001/api/export/sql
+curl -o local-export.sql http://localhost:3002/api/export/sql
 echo SQL exportado a local-export.sql
 echo.
 

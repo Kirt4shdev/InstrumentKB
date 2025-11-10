@@ -12,11 +12,11 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: process.env.DOCKER_ENV === 'true' ? 'http://backend:3001' : 'http://localhost:3001',
+        target: process.env.DOCKER_ENV === 'true' ? 'http://backend:3002' : 'http://localhost:3002',
         changeOrigin: true
       },
       '/uploads': {
-        target: process.env.DOCKER_ENV === 'true' ? 'http://backend:3001' : 'http://localhost:3001',
+        target: process.env.DOCKER_ENV === 'true' ? 'http://backend:3002' : 'http://localhost:3002',
         changeOrigin: true
       }
     }

@@ -8,7 +8,7 @@ echo ""
 
 # Paso 1: Exportar datos locales
 echo "📤 1. Exportando datos del entorno local..."
-curl -o local-export.json http://localhost:3001/api/export/json
+curl -o local-export.json http://localhost:3002/api/export/json
 echo "✅ Datos exportados a local-export.json"
 echo ""
 
@@ -37,7 +37,7 @@ echo "   3. cd /ruta/al/proyecto/backend"
 echo "   4. npm run import -- /ruta/a/local-export.json"
 echo ""
 echo "   Opción C - Via SQL dump:"
-curl -o local-export.sql http://localhost:3001/api/export/sql
+curl -o local-export.sql http://localhost:3002/api/export/sql
 echo "   Archivo SQL generado: local-export.sql"
 echo "   Importar con: psql -U usuario -d base_datos -f local-export.sql"
 echo ""

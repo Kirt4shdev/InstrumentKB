@@ -24,7 +24,7 @@ COPY . .
 # Crear directorio de uploads
 RUN mkdir -p uploads/documents uploads/images
 
-EXPOSE 3001
+EXPOSE 3002
 
 # Script de inicio con migraciones automáticas
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && npm run dev"]
