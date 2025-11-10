@@ -21,6 +21,7 @@ import {
   Text,
   Badge,
   Tooltip,
+  Autocomplete,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconTrash, IconPlus, IconInfoCircle } from '@tabler/icons-react';
@@ -33,6 +34,7 @@ import {
   createArticle,
   getArticle,
   updateArticle,
+  createManufacturer,
 } from '../api';
 import { ArticleTypeOption } from '../types';
 
@@ -78,6 +80,7 @@ function ArticleNew() {
   const [images, setImages] = useState<any[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [manufacturerValue, setManufacturerValue] = useState('');
 
   const form = useForm({
     initialValues: {
@@ -186,6 +189,11 @@ function ArticleNew() {
         active: article.active ?? true,
       });
       
+      // Establecer el nombre del fabricante si existe
+      if (article.manufacturer) {
+        setManufacturerValue(article.manufacturer.name);
+      }
+      
       // Poblar las relaciones
       if (article.article_variables) setArticleVariables(article.article_variables);
       if (article.article_protocols) setArticleProtocols(article.article_protocols);
@@ -252,7 +260,15 @@ function ArticleNew() {
       Object.keys(values).forEach(key => {
         const value = values[key];
         if (value !== '' && value !== null && value !== undefined) {
-          data[key] = value;
+          // Convertir manufacturer_id de string a número
+          if (key === 'manufacturer_id') {
+            const numValue = parseInt(value);
+            if (!isNaN(numValue)) {
+              data[key] = numValue;
+            }
+          } else {
+            data[key] = value;
+          }
         }
       });
       
@@ -446,6 +462,66 @@ function ArticleNew() {
     setList(newList);
   };
 
+  // Manejar el cambio de fabricante con autocompletado
+  const handleManufacturerChange = async (value: string) => {
+    setManufacturerValue(value);
+    
+    // Buscar si el fabricante existe en la lista (búsqueda case-insensitive)
+    const existingManufacturer = manufacturers.find(
+      m => m.name.toLowerCase() === value.toLowerCase()
+    );
+    
+    if (existingManufacturer) {
+      // Si existe, usar su ID
+      form.setFieldValue('manufacturer_id', existingManufacturer.manufacturer_id.toString());
+    } else if (value.trim()) {
+      // Si no existe y no está vacío, crear uno nuevo automáticamente
+      try {
+        const response = await createManufacturer({ name: value.trim() });
+        const newManufacturer = response.data;
+        
+        // Agregar a la lista local
+        setManufacturers([...manufacturers, newManufacturer]);
+        
+        // Establecer el ID en el formulario
+        form.setFieldValue('manufacturer_id', newManufacturer.manufacturer_id.toString());
+        
+        console.log(`✅ Nuevo fabricante creado: ${newManufacturer.name}`);
+      } catch (error: any) {
+        console.error('Error creating manufacturer:', error);
+        
+        // Si el error es por duplicado, buscar y usar el existente
+        if (error.response?.status === 400 || error.response?.status === 500) {
+          // Recargar la lista de fabricantes para obtener el que podría haberse creado
+          try {
+            const manufacturersRes = await getManufacturers();
+            setManufacturers(manufacturersRes.data);
+            
+            // Buscar de nuevo el fabricante
+            const found = manufacturersRes.data.find(
+              (m: any) => m.name.toLowerCase() === value.toLowerCase()
+            );
+            
+            if (found) {
+              form.setFieldValue('manufacturer_id', found.manufacturer_id.toString());
+              console.log(`✅ Usando fabricante existente: ${found.name}`);
+            } else {
+              form.setFieldValue('manufacturer_id', '');
+            }
+          } catch (reloadError) {
+            console.error('Error reloading manufacturers:', reloadError);
+            form.setFieldValue('manufacturer_id', '');
+          }
+        } else {
+          form.setFieldValue('manufacturer_id', '');
+        }
+      }
+    } else {
+      // Si está vacío, limpiar el ID
+      form.setFieldValue('manufacturer_id', '');
+    }
+  };
+
   // Generar preview JSON (solo campos con datos)
   const getPreviewObject = () => {
     const preview: any = {};
@@ -627,21 +703,18 @@ function ArticleNew() {
                       <Title order={5} mb="md">Fabricante y Modelo</Title>
                       <Grid>
                         <Grid.Col span={6}>
-                          <Select
+                          <Autocomplete
                             label={
                               <LabelWithTooltip
                                 label="Fabricante"
-                                tooltip="Empresa que fabrica el artículo. Selecciona de la lista de fabricantes registrados. Si no existe, primero debes crearlo en el módulo de Fabricantes."
+                                tooltip="Empresa que fabrica el artículo. Escribe para buscar en la lista de fabricantes registrados o ingresa un nombre nuevo para crear uno automáticamente."
                               />
                             }
-                            placeholder="Selecciona un fabricante"
-                            data={manufacturers.map(m => ({ 
-                              value: m.manufacturer_id.toString(), 
-                              label: m.name 
-                            }))}
-                            searchable
-                            clearable
-                            {...form.getInputProps('manufacturer_id')}
+                            placeholder="Escribe o selecciona un fabricante"
+                            data={manufacturers.map(m => m.name)}
+                            value={manufacturerValue}
+                            onChange={handleManufacturerChange}
+                            limit={10}
                           />
                         </Grid.Col>
                         <Grid.Col span={3}>

@@ -263,3 +263,4 @@ El formulario está ahora completamente autodocumentado con 78+ tooltips explica
 **Total de tooltips:** 78+
 **Cobertura:** 100% ✅
 
+
