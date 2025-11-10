@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
-import { AppShell, Group, Title, Button, Menu, ActionIcon, useMantineColorScheme, Box, Text } from '@mantine/core';
+import { AppShell, Group, Title, Button, Menu, ActionIcon, useMantineColorScheme, Box, Text, Divider } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
-import { IconDownload, IconFileTypeCsv, IconFileTypeXls, IconDatabase, IconSun, IconMoon, IconSparkles } from '@tabler/icons-react';
+import { IconDownload, IconFileTypeCsv, IconFileTypeXls, IconDatabase, IconSun, IconMoon, IconApps, IconPlus, IconChevronDown } from '@tabler/icons-react';
 import { exportJSON, exportExcel, exportSQL } from './api';
 import { notifications } from '@mantine/notifications';
 import ArticleList from './pages/ArticleList';
@@ -122,7 +122,7 @@ function App() {
       notifications.update({
         id: 'export-sql',
         title: 'Exportación completada',
-        message: 'Archivo SQL descargado correctamente. Puedes importarlo directamente en PostgreSQL.',
+        message: 'Archivo SQL descargado correctamente',
         color: 'green',
         loading: false,
         autoClose: 5000
@@ -142,130 +142,112 @@ function App() {
 
   return (
     <AppShell
-      header={{ height: 70 }}
+      header={{ height: 56 }}
       padding="md"
     >
-      <AppShell.Header className="elevated-header">
-        <Group h="100%" px="xl" justify="space-between">
+      <AppShell.Header className="corporate-header">
+        <Group h="100%" px="md" justify="space-between">
+          {/* Logo corporativo */}
           <Group gap="md" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
             <Box
               style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '12px',
-                padding: '8px 12px',
+                background: '#2196F3',
+                borderRadius: '4px',
+                padding: '6px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
               }}
             >
-              <IconSparkles size={24} color="white" />
+              <IconApps size={18} color="white" />
             </Box>
             <Box>
-              <Title 
-                order={3}
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: 800,
-                }}
-              >
+              <Title order={4} style={{ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1 }}>
                 InstrumentKB
               </Title>
-              <Text size="xs" c="dimmed" style={{ marginTop: -4 }}>
-                Catálogo SAP Inteligente
+              <Text size="xs" c="dimmed" style={{ lineHeight: 1, marginTop: 2 }}>
+                SAP Catalog
               </Text>
             </Box>
           </Group>
-          <Group gap="sm">
-            <Menu shadow="xl" width={280} position="bottom-end">
+
+          {/* Acciones */}
+          <Group gap="xs">
+            <Menu 
+              shadow="sm" 
+              width={240} 
+              position="bottom-end"
+            >
               <Menu.Target>
                 <Button 
-                  variant="gradient"
-                  gradient={{ from: 'cyan', to: 'indigo', deg: 135 }}
-                  leftSection={<IconDownload size={18} />}
-                  style={{ fontWeight: 600 }}
+                  variant="default"
+                  size="xs"
+                  rightSection={<IconChevronDown size={14} />}
+                  leftSection={<IconDownload size={14} />}
+                  style={{ fontWeight: 500 }}
                 >
-                  Exportar
+                  Export
                 </Button>
               </Menu.Target>
 
               <Menu.Dropdown>
-                <Menu.Label style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                  Formatos de Exportación
+                <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
+                  Export Formats
                 </Menu.Label>
                 <Menu.Item
-                  leftSection={<IconFileTypeCsv size={18} />}
+                  leftSection={<IconFileTypeCsv size={14} />}
                   onClick={handleExportJSON}
+                  style={{ fontSize: '13px' }}
                 >
-                  <div>
-                    <Text fw={500} size="sm">JSON (Completo)</Text>
-                    <Text size="xs" c="dimmed">
-                      Cada instrumento con toda su info
-                    </Text>
-                  </div>
+                  JSON (Complete)
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={<IconFileTypeXls size={18} />}
+                  leftSection={<IconFileTypeXls size={14} />}
                   onClick={handleExportExcel}
+                  style={{ fontSize: '13px' }}
                 >
-                  <div>
-                    <Text fw={500} size="sm">Excel (XLSX)</Text>
-                    <Text size="xs" c="dimmed">
-                      Una tabla por hoja
-                    </Text>
-                  </div>
+                  Excel (XLSX)
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Label style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                  Para Producción
+                <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
+                  Production
                 </Menu.Label>
                 <Menu.Item
-                  leftSection={<IconDatabase size={18} />}
+                  leftSection={<IconDatabase size={14} />}
                   onClick={handleExportSQL}
-                  color="teal"
+                  style={{ fontSize: '13px' }}
                 >
-                  <div>
-                    <Text fw={500} size="sm">PostgreSQL (SQL)</Text>
-                    <Text size="xs" c="dimmed">
-                      Importación directa
-                    </Text>
-                  </div>
+                  PostgreSQL (SQL)
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
 
             <Button 
-              variant="light"
-              color="violet"
+              variant="filled"
+              color="blue"
+              size="xs"
               onClick={() => navigate('/new')}
-              style={{ fontWeight: 600 }}
+              leftSection={<IconPlus size={14} />}
+              style={{ fontWeight: 500 }}
             >
-              + Nuevo Artículo
+              New Article
             </Button>
+
+            <Divider orientation="vertical" />
 
             <ActionIcon
               onClick={() => toggleColorScheme()}
-              variant="default"
-              size="lg"
+              variant="subtle"
+              color="gray"
+              size="md"
               aria-label="Toggle color scheme"
-              style={{
-                border: '1px solid rgba(102, 126, 234, 0.3)',
-                transition: 'all 0.3s ease',
-              }}
             >
-              {colorScheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
+              {colorScheme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
             </ActionIcon>
           </Group>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Main style={{ 
-        background: colorScheme === 'dark' 
-          ? 'linear-gradient(180deg, rgba(26, 27, 30, 1) 0%, rgba(37, 38, 43, 1) 100%)'
-          : 'linear-gradient(180deg, rgba(248, 249, 250, 1) 0%, rgba(233, 236, 239, 1) 100%)',
-        minHeight: '100vh',
-      }}>
+      <AppShell.Main>
         <Routes>
           <Route path="/" element={<ArticleList />} />
           <Route path="/new" element={<ArticleNew />} />

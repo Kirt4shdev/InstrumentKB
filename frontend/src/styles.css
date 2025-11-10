@@ -1,7 +1,7 @@
-/* Estilos globales y animaciones */
+/* Estilos globales - Corporativo Moderno */
 
 * {
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 body {
@@ -11,13 +11,16 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  font-size: 14px;
+  letter-spacing: -0.01em;
 }
 
-/* Animaciones sutiles */
+/* Animaciones sutiles corporativas */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -25,141 +28,111 @@ body {
   }
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
 .fade-in {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
-.slide-in {
-  animation: slideIn 0.4s ease-out;
-}
-
-/* Efectos de hover mejorados */
+/* Hover corporativo sutil */
 .hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Gradientes elegantes */
-.gradient-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-card {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-/* Scrollbar personalizado */
+/* Scrollbar corporativo */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--mantine-color-dark-8);
-  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--mantine-color-dark-4);
-  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--mantine-color-dark-3);
+  background: rgba(0, 0, 0, 0.3);
 }
 
-/* Botones con efecto glassmorphism */
-.glass-button {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Tablas corporativas */
+.corporate-table tbody tr {
+  transition: background-color 0.15s ease, border-left-color 0.15s ease;
+  border-left: 3px solid transparent;
 }
 
-/* Cards con efecto hover */
-.card-hover {
-  transition: all 0.3s ease;
-  cursor: pointer;
+.corporate-table tbody tr:hover {
+  background-color: rgba(33, 150, 243, 0.04) !important;
+  border-left-color: #2196F3;
 }
 
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-}
-
-/* Badge con efecto brillante */
-.badge-shine {
-  position: relative;
-  overflow: hidden;
-}
-
-.badge-shine::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s;
-}
-
-.badge-shine:hover::after {
-  left: 100%;
-}
-
-/* Header con sombra mejorada */
-.elevated-header {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  background: rgba(26, 27, 30, 0.95);
-}
-
-/* Tablas con mejor apariencia */
-.elegant-table tbody tr {
+/* Cards corporativos */
+.corporate-card {
+  background: var(--mantine-color-body);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
-.elegant-table tbody tr:hover {
-  background: rgba(102, 126, 234, 0.1);
-  transform: scale(1.01);
+.corporate-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: rgba(33, 150, 243, 0.3);
 }
 
-/* Inputs con focus mejorado */
+/* Modales */
+.mantine-Modal-content {
+  animation: fadeIn 0.2s ease;
+}
+
+/* Badges corporativos */
+.mantine-Badge-root {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Botones */
+.mantine-Button-root {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Inputs */
+.mantine-Input-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
 .mantine-Input-input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #2196F3;
+  box-shadow: 0 0 0 1px rgba(33, 150, 243, 0.2);
 }
 
-/* Paper con gradiente sutil */
-.elegant-paper {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.05) 0%, 
-    rgba(255, 255, 255, 0.02) 100%);
-  backdrop-filter: blur(10px);
+/* Headers */
+.corporate-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--mantine-color-body);
 }
 
+[data-mantine-color-scheme='dark'] .corporate-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Tooltips corporativos */
+.mantine-Tooltip-tooltip {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+/* Dividers */
+.corporate-divider {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-mantine-color-scheme='dark'] .corporate-divider {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}

@@ -23,10 +23,10 @@ import {
   Tooltip,
   Autocomplete,
   Box,
-  Card,
+  Divider,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconTrash, IconPlus, IconInfoCircle, IconArrowLeft, IconSparkles, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconTrash, IconPlus, IconInfoCircle, IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react';
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { 
@@ -555,70 +555,36 @@ function ArticleNew() {
   const showAdvancedFields = ['INSTRUMENTO', 'SENSOR', 'DATALOGGER', 'ACTUADOR', 'MODULO_IO', 'GATEWAY'].includes(selectedType);
 
   return (
-    <Container size="xl" py="xl" className="fade-in">
-      <Stack gap="xl">
-        {/* Header con diseño moderno */}
-        <Card 
-          padding="lg" 
-          radius="md"
-          style={{
-            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
-            border: '1px solid rgba(102, 126, 234, 0.3)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <Group justify="space-between" align="center">
-            <Group gap="md">
-              <Box
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <IconSparkles size={28} color="white" />
-              </Box>
-              <Box>
-                <Title 
-                  order={2}
-                  style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontWeight: 800,
-                  }}
-                >
-                  {isEditMode ? 'Editar Artículo' : 'Nuevo Artículo'}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {isEditMode ? 'Actualiza la información del artículo' : 'Completa el formulario para crear un nuevo artículo'}
-                </Text>
-              </Box>
-            </Group>
-            <Button 
-              variant="subtle" 
-              color="violet"
-              leftSection={<IconArrowLeft size={18} />}
-              onClick={() => navigate('/')}
-              size="md"
-            >
-              Cancelar
-            </Button>
-          </Group>
-        </Card>
+    <Container size="xl" py="sm" className="fade-in">
+      <Stack gap="sm">
+        {/* Header corporativo */}
+        <Group justify="space-between" align="center" mb="xs">
+          <Box>
+            <Title order={2} style={{ fontWeight: 600, fontSize: '1.5rem' }}>
+              {isEditMode ? 'Editar Artículo' : 'Nuevo Artículo'}
+            </Title>
+            <Text size="sm" c="dimmed">
+              {isEditMode ? 'Actualiza la información del artículo' : 'Completa el formulario para crear un nuevo artículo'}
+            </Text>
+          </Box>
+          <Button 
+            variant="default"
+            leftSection={<IconArrowLeft size={14} />}
+            onClick={() => navigate('/')}
+            size="xs"
+          >
+            Cancelar
+          </Button>
+        </Group>
+
+        <Divider className="corporate-divider" />
 
         {error && (
           <Notification 
             color="red" 
-            title="Error al guardar el artículo"
+            title="Error"
             onClose={() => setError(null)}
             withCloseButton
-            style={{
-              boxShadow: '0 8px 24px rgba(255, 0, 0, 0.15)',
-              border: '1px solid rgba(255, 0, 0, 0.2)',
-            }}
           >
             {error}
           </Notification>
@@ -627,12 +593,8 @@ function ArticleNew() {
         {success && (
           <Notification 
             color="green" 
-            title="¡Éxito!"
+            title="Éxito"
             withCloseButton={false}
-            style={{
-              boxShadow: '0 8px 24px rgba(0, 255, 0, 0.15)',
-              border: '1px solid rgba(0, 255, 0, 0.2)',
-            }}
           >
             {isEditMode ? '¡Artículo actualizado exitosamente! Redirigiendo...' : '¡Artículo creado exitosamente! Redirigiendo...'}
           </Notification>
@@ -2101,24 +2063,22 @@ function ArticleNew() {
               </Tabs>
 
               {/* Botones de acción */}
-              <Group justify="flex-end" mt="lg">
+              <Group justify="flex-end" mt="md">
                 <Button 
-                  variant="subtle" 
-                  color="gray"
+                  variant="default"
                   onClick={() => navigate('/')}
-                  size="md"
-                  leftSection={<IconArrowLeft size={18} />}
+                  size="xs"
+                  leftSection={<IconArrowLeft size={14} />}
                 >
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   loading={loading}
-                  variant="gradient"
-                  gradient={{ from: 'cyan', to: 'indigo', deg: 135 }}
-                  size="md"
-                  leftSection={<IconDeviceFloppy size={18} />}
-                  style={{ fontWeight: 600 }}
+                  variant="filled"
+                  color="blue"
+                  size="xs"
+                  leftSection={<IconDeviceFloppy size={14} />}
                 >
                   {isEditMode ? 'Actualizar Artículo' : 'Crear Artículo'}
                 </Button>
