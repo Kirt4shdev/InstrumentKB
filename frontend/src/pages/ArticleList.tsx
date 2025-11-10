@@ -172,7 +172,7 @@ function ArticleList() {
         <Paper p="sm" className="corporate-card">
           <Group gap="xs">
             <TextInput
-              placeholder="Search by ID, description, model..."
+              placeholder="Buscar por código SAP, descripción, modelo..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -181,9 +181,9 @@ function ArticleList() {
               style={{ flex: 1 }}
             />
             <Select
-              placeholder="Filter by type"
+              placeholder="Filtrar por tipo"
               data={[
-                { value: '', label: 'All types' },
+                { value: '', label: 'Todos los tipos' },
                 ...articleTypes.map(t => ({ value: t.value, label: t.label }))
               ]}
               value={selectedType}
@@ -197,22 +197,22 @@ function ArticleList() {
               variant="filled"
               color="blue"
               size="xs"
-              leftSection={<IconFilter size={14} />}
-            >
-              Search
-            </Button>
+                  leftSection={<IconFilter size={14} />}
+                >
+                  Buscar
+                </Button>
           </Group>
         </Paper>
 
         {loading ? (
           <Box py="xl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
             <Loader size="md" />
-            <Text c="dimmed" size="xs">Loading articles...</Text>
+            <Text c="dimmed" size="xs">Cargando artículos...</Text>
           </Box>
         ) : articles.length === 0 ? (
           <Paper p="lg" className="corporate-card" style={{ textAlign: 'center' }}>
             <Text c="dimmed" size="sm">
-              No articles found
+              No se encontraron artículos
             </Text>
           </Paper>
         ) : (
@@ -220,14 +220,14 @@ function ArticleList() {
             <Table highlightOnHover className="corporate-table" style={{ fontSize: '13px' }}>
               <Table.Thead>
                 <Table.Tr style={{ background: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Article ID</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Type</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Description</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Category</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Manufacturer</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Model</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Status</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px', width: 100 }}>Actions</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Código SAP</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Tipo</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Descripción</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Categoría</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Fabricante</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Modelo</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Estado</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px', width: 100 }}>Acciones</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -238,10 +238,10 @@ function ArticleList() {
                     onClick={() => navigate(`/article/${article.article_id}`)}
                   >
                     <Table.Td style={{ padding: '8px 12px' }}>
-                      <Text fw={600} size="xs">{article.article_id}</Text>
-                      {article.sap_itemcode && (
-                        <Text size="10px" c="dimmed">{article.sap_itemcode}</Text>
-                      )}
+                      <Text fw={600} size="xs" style={{ color: 'var(--mantine-color-blue-6)' }}>
+                        {article.sap_itemcode || '-'}
+                      </Text>
+                      <Text size="10px" c="dimmed">ID: {article.article_id}</Text>
                     </Table.Td>
                     <Table.Td style={{ padding: '8px 12px' }}>
                       <Badge color={getTypeColor(article.article_type)} variant="light" size="xs">
@@ -274,12 +274,12 @@ function ArticleList() {
                         variant="dot"
                         size="xs"
                       >
-                        {article.active ? 'Active' : 'Inactive'}
+                        {article.active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </Table.Td>
                     <Table.Td style={{ padding: '8px 12px' }}>
                       <Group gap={4}>
-                        <Tooltip label="View">
+                        <Tooltip label="Ver">
                           <ActionIcon
                             variant="subtle"
                             color="blue"
@@ -292,7 +292,7 @@ function ArticleList() {
                             <IconEye size={14} />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Edit">
+                        <Tooltip label="Editar">
                           <ActionIcon
                             variant="subtle"
                             color="gray"
@@ -302,7 +302,7 @@ function ArticleList() {
                             <IconEdit size={14} />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Delete">
+                        <Tooltip label="Eliminar">
                           <ActionIcon
                             variant="subtle"
                             color="red"
@@ -324,10 +324,10 @@ function ArticleList() {
         {/* Footer corporativo */}
         <Group justify="space-between" align="center" mt="xs">
           <Text size="xs" c="dimmed">
-            Showing {articles.length} of {articles.length} articles
+            Mostrando {articles.length} de {articles.length} artículos
           </Text>
           <Text size="xs" c="dimmed">
-            Last updated: {new Date().toLocaleDateString()}
+            Última actualización: {new Date().toLocaleDateString('es-ES')}
           </Text>
         </Group>
       </Stack>
@@ -336,22 +336,23 @@ function ArticleList() {
       <Modal
         opened={deleteModalOpen}
         onClose={() => !deleting && setDeleteModalOpen(false)}
-        title="Confirm Deletion"
+        title="Confirmar Eliminación"
         centered
         size="sm"
       >
         <Stack gap="sm">
           <Text size="sm">
-            Are you sure you want to delete this article?
+            ¿Estás seguro de que deseas eliminar este artículo?
           </Text>
           {articleToDelete && (
             <Paper p="xs" style={{ background: 'rgba(255, 0, 0, 0.05)', border: '1px solid rgba(255, 0, 0, 0.1)' }}>
-              <Text size="xs" fw={600}>{articleToDelete.article_id}</Text>
-              <Text size="xs">{articleToDelete.sap_description}</Text>
+              <Text size="xs" fw={600} c="blue">SAP: {articleToDelete.sap_itemcode || '-'}</Text>
+              <Text size="xs" c="dimmed">ID: {articleToDelete.article_id}</Text>
+              <Text size="xs" mt={4}>{articleToDelete.sap_description}</Text>
             </Paper>
           )}
           <Text size="xs" c="red">
-            This action cannot be undone.
+            Esta acción no se puede deshacer.
           </Text>
           
           <Group justify="flex-end" mt="xs">
@@ -361,7 +362,7 @@ function ArticleList() {
               disabled={deleting}
               size="xs"
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               color="red"
@@ -369,7 +370,7 @@ function ArticleList() {
               loading={deleting}
               size="xs"
             >
-              Delete
+              Eliminar
             </Button>
           </Group>
         </Stack>

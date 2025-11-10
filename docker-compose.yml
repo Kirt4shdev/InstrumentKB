@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: kb_pass
       POSTGRES_DB: instruments
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -29,10 +29,10 @@ services:
       DATABASE_URL: postgresql://kb_user:kb_pass@db:5432/instruments
       STORAGE_DRIVER: local
       STORAGE_PATH: /app/uploads
-      PORT: 3001
+      PORT: 3002
       NODE_ENV: development
     ports:
-      - "3001:3001"
+      - "3002:3002"
     volumes:
       - ./backend:/app
       - ./backend/uploads:/app/uploads
@@ -61,7 +61,7 @@ services:
       dockerfile: Dockerfile
     container_name: instrumentkb-frontend
     environment:
-      VITE_API_URL: http://localhost:3001/api
+      VITE_API_URL: http://localhost:3002/api
       DOCKER_ENV: "true"
     ports:
       - "3000:3000"

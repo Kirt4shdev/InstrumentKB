@@ -162,10 +162,10 @@ function App() {
             </Box>
             <Box>
               <Title order={4} style={{ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1 }}>
-                InstrumentKB
+                Instrument Knowledge Base
               </Title>
               <Text size="xs" c="dimmed" style={{ lineHeight: 1, marginTop: 2 }}>
-                SAP Catalog
+                Catálogo SAP
               </Text>
             </Box>
           </Group>
@@ -185,20 +185,20 @@ function App() {
                   leftSection={<IconDownload size={14} />}
                   style={{ fontWeight: 500 }}
                 >
-                  Export
+                  Exportar
                 </Button>
               </Menu.Target>
 
               <Menu.Dropdown>
                 <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
-                  Export Formats
+                  Formatos de Exportación
                 </Menu.Label>
                 <Menu.Item
                   leftSection={<IconFileTypeCsv size={14} />}
                   onClick={handleExportJSON}
                   style={{ fontSize: '13px' }}
                 >
-                  JSON (Complete)
+                  JSON (Completo)
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<IconFileTypeXls size={14} />}
@@ -209,7 +209,7 @@ function App() {
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
-                  Production
+                  Producción
                 </Menu.Label>
                 <Menu.Item
                   leftSection={<IconDatabase size={14} />}
@@ -229,7 +229,7 @@ function App() {
               leftSection={<IconPlus size={14} />}
               style={{ fontWeight: 500 }}
             >
-              New Article
+              Nuevo Artículo
             </Button>
 
             <Divider orientation="vertical" />

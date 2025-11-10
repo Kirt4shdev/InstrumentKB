@@ -303,29 +303,29 @@ function ArticleDetail() {
                   {article.article_variables.map((av) => (
                     <Table.Tr key={av.art_var_id}>
                       <Table.Td>
-                        <Badge variant="light" size="lg" color="violet">
+                        <Badge variant="light" size="xs" color="violet">
                           {av.variable?.name || '-'}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" fw={500}>
+                        <Text size="xs">
                           {av.range_min !== null && av.range_max !== null
                             ? `${av.range_min} - ${av.range_max}`
                             : '-'}
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge variant="outline" size="md">
+                        <Badge variant="outline" size="xs">
                           {av.unit || '-'}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" fw={500}>
+                        <Text size="xs">
                           {av.accuracy_abs ? `±${av.accuracy_abs}` : '-'}
                         </Text>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" fw={500}>
+                        <Text size="xs">
                           {av.resolution || '-'}
                         </Text>
                       </Table.Td>
@@ -333,7 +333,6 @@ function ArticleDetail() {
                   ))}
                 </Table.Tbody>
               </Table>
-            </Paper>
           </Paper>
         )}
 
