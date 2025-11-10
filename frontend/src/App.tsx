@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
-import { AppShell, Group, Title, Button, Menu } from '@mantine/core';
+import { AppShell, Group, Title, Button, Menu, ActionIcon, useMantineColorScheme, Box, Text } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
-import { IconDownload, IconFileTypeCsv, IconFileTypeXls, IconDatabase } from '@tabler/icons-react';
+import { IconDownload, IconFileTypeCsv, IconFileTypeXls, IconDatabase, IconSun, IconMoon, IconSparkles } from '@tabler/icons-react';
 import { exportJSON, exportExcel, exportSQL } from './api';
 import { notifications } from '@mantine/notifications';
 import ArticleList from './pages/ArticleList';
@@ -10,6 +10,7 @@ import ArticleDetail from './pages/ArticleDetail';
 
 function App() {
   const navigate = useNavigate();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
   const handleExportJSON = async () => {
     try {
@@ -141,76 +142,130 @@ function App() {
 
   return (
     <AppShell
-      header={{ height: 60 }}
+      header={{ height: 70 }}
       padding="md"
     >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Title 
-            order={3} 
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/')}
-          >
-            📦 InstrumentKB - Catálogo SAP
-          </Title>
-          <Group>
-            <Menu shadow="md" width={250}>
+      <AppShell.Header className="elevated-header">
+        <Group h="100%" px="xl" justify="space-between">
+          <Group gap="md" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
+            <Box
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '12px',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <IconSparkles size={24} color="white" />
+            </Box>
+            <Box>
+              <Title 
+                order={3}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 800,
+                }}
+              >
+                InstrumentKB
+              </Title>
+              <Text size="xs" c="dimmed" style={{ marginTop: -4 }}>
+                Catálogo SAP Inteligente
+              </Text>
+            </Box>
+          </Group>
+          <Group gap="sm">
+            <Menu shadow="xl" width={280} position="bottom-end">
               <Menu.Target>
                 <Button 
-                  variant="light" 
-                  leftSection={<IconDownload size={16} />}
-                  color="blue"
+                  variant="gradient"
+                  gradient={{ from: 'cyan', to: 'indigo', deg: 135 }}
+                  leftSection={<IconDownload size={18} />}
+                  style={{ fontWeight: 600 }}
                 >
-                  Exportar Datos
+                  Exportar
                 </Button>
               </Menu.Target>
 
               <Menu.Dropdown>
-                <Menu.Label>Formatos de Exportación</Menu.Label>
+                <Menu.Label style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                  Formatos de Exportación
+                </Menu.Label>
                 <Menu.Item
-                  leftSection={<IconFileTypeCsv size={16} />}
+                  leftSection={<IconFileTypeCsv size={18} />}
                   onClick={handleExportJSON}
                 >
-                  JSON (Completo)
-                  <div style={{ fontSize: '0.75rem', color: 'gray' }}>
-                    Cada instrumento con toda su info
+                  <div>
+                    <Text fw={500} size="sm">JSON (Completo)</Text>
+                    <Text size="xs" c="dimmed">
+                      Cada instrumento con toda su info
+                    </Text>
                   </div>
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={<IconFileTypeXls size={16} />}
+                  leftSection={<IconFileTypeXls size={18} />}
                   onClick={handleExportExcel}
                 >
-                  Excel (XLSX)
-                  <div style={{ fontSize: '0.75rem', color: 'gray' }}>
-                    Una tabla por hoja
+                  <div>
+                    <Text fw={500} size="sm">Excel (XLSX)</Text>
+                    <Text size="xs" c="dimmed">
+                      Una tabla por hoja
+                    </Text>
                   </div>
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Label>Para Producción</Menu.Label>
+                <Menu.Label style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                  Para Producción
+                </Menu.Label>
                 <Menu.Item
-                  leftSection={<IconDatabase size={16} />}
+                  leftSection={<IconDatabase size={18} />}
                   onClick={handleExportSQL}
-                  color="green"
+                  color="teal"
                 >
-                  PostgreSQL (SQL)
-                  <div style={{ fontSize: '0.75rem', color: 'gray' }}>
-                    Importación directa
+                  <div>
+                    <Text fw={500} size="sm">PostgreSQL (SQL)</Text>
+                    <Text size="xs" c="dimmed">
+                      Importación directa
+                    </Text>
                   </div>
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
 
             <Button 
-              variant="light" 
+              variant="light"
+              color="violet"
               onClick={() => navigate('/new')}
+              style={{ fontWeight: 600 }}
             >
-              Nuevo Artículo
+              + Nuevo Artículo
             </Button>
+
+            <ActionIcon
+              onClick={() => toggleColorScheme()}
+              variant="default"
+              size="lg"
+              aria-label="Toggle color scheme"
+              style={{
+                border: '1px solid rgba(102, 126, 234, 0.3)',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {colorScheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
+            </ActionIcon>
           </Group>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Main>
+      <AppShell.Main style={{ 
+        background: colorScheme === 'dark' 
+          ? 'linear-gradient(180deg, rgba(26, 27, 30, 1) 0%, rgba(37, 38, 43, 1) 100%)'
+          : 'linear-gradient(180deg, rgba(248, 249, 250, 1) 0%, rgba(233, 236, 239, 1) 100%)',
+        minHeight: '100vh',
+      }}>
         <Routes>
           <Route path="/" element={<ArticleList />} />
           <Route path="/new" element={<ArticleNew />} />
