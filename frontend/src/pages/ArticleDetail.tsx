@@ -449,6 +449,445 @@ function ArticleDetail() {
           </Paper>
         )}
 
+        {/* Calefacción */}
+        {article.has_heating && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Sistema de Calefacción
+            </Title>
+            <Divider mb="xs" />
+            <Grid>
+              <Grid.Col span={4}>
+                <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Consumo</Text>
+                <Badge variant="light" size="xs" color="red">
+                  {article.heating_consumption_w ? `${article.heating_consumption_w} W` : '-'}
+                </Badge>
+              </Grid.Col>
+              <Grid.Col span={4}>
+                <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Temp. Mínima</Text>
+                <Badge variant="light" size="xs" color="blue">
+                  {article.heating_temp_min_c !== null && article.heating_temp_min_c !== undefined ? `${article.heating_temp_min_c} °C` : '-'}
+                </Badge>
+              </Grid.Col>
+              <Grid.Col span={4}>
+                <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Temp. Máxima</Text>
+                <Badge variant="light" size="xs" color="orange">
+                  {article.heating_temp_max_c !== null && article.heating_temp_max_c !== undefined ? `${article.heating_temp_max_c} °C` : '-'}
+                </Badge>
+              </Grid.Col>
+            </Grid>
+          </Paper>
+        )}
+
+        {/* Salidas Analógicas */}
+        {article.analog_outputs && article.analog_outputs.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Salidas Analógicas
+            </Title>
+            <Divider mb="xs" />
+            <Table className="corporate-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Tipo</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Canales</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Rango</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Unidad</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Notas</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {article.analog_outputs.map((ao: any) => (
+                  <Table.Tr key={ao.analog_out_id}>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color="cyan">
+                        {ao.type}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{ao.num_channels || '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">
+                        {ao.range_min !== null && ao.range_max !== null
+                          ? `${ao.range_min} - ${ao.range_max}`
+                          : '-'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="outline" size="xs">
+                        {ao.unit || '-'}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{ao.scaling_notes || '-'}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* I/O Digital */}
+        {article.digital_io && article.digital_io.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              I/O Digital
+            </Title>
+            <Divider mb="xs" />
+            <Table className="corporate-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Dirección</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Tipo Señal</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Nivel Voltaje</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Notas</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {article.digital_io.map((dio: any) => (
+                  <Table.Tr key={dio.dio_id}>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color={dio.direction === 'input' ? 'green' : 'orange'}>
+                        {dio.direction}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color="indigo">
+                        {dio.signal_type}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{dio.voltage_level || '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{dio.notes || '-'}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* Registros Modbus */}
+        {article.modbus_registers && article.modbus_registers.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Registros Modbus
+            </Title>
+            <Divider mb="xs" />
+            <Table className="corporate-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>FC</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Dirección</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Nombre</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Tipo</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>R/W</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Unidad</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {article.modbus_registers.map((reg: any) => (
+                  <Table.Tr key={reg.modbus_id}>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color="blue">
+                        {reg.function_code}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs" fw={500}>{reg.address}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{reg.name}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="outline" size="xs">
+                        {reg.datatype || '-'}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color={reg.rw === 'R' ? 'green' : reg.rw === 'W' ? 'orange' : 'purple'}>
+                        {reg.rw}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{reg.unit || '-'}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* Comandos SDI-12 */}
+        {article.sdi12_commands && article.sdi12_commands.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Comandos SDI-12
+            </Title>
+            <Divider mb="xs" />
+            <Table className="corporate-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Comando</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Descripción</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Formato Respuesta</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {article.sdi12_commands.map((cmd: any) => (
+                  <Table.Tr key={cmd.sdi12_id}>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color="grape">
+                        {cmd.command}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{cmd.description || '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{cmd.response_format || '-'}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* Sentencias NMEA */}
+        {article.nmea_sentences && article.nmea_sentences.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Sentencias NMEA
+            </Title>
+            <Divider mb="xs" />
+            <Table className="corporate-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Sentencia</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Descripción</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Campos</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {article.nmea_sentences.map((nmea: any) => (
+                  <Table.Tr key={nmea.nmea_id}>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color="teal">
+                        {nmea.sentence}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{nmea.description || '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{nmea.fields || '-'}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* Accesorios */}
+        {article.accessories && article.accessories.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Accesorios
+            </Title>
+            <Divider mb="xs" />
+            <Table className="corporate-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Nombre</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Part Number</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Cantidad</Table.Th>
+                  <Table.Th style={{ fontWeight: 600, fontSize: '0.7rem' }}>Descripción</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {article.accessories.map((acc: any) => (
+                  <Table.Tr key={acc.accessory_id}>
+                    <Table.Td>
+                      <Text size="xs" fw={500}>{acc.name}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="outline" size="xs">
+                        {acc.part_number || '-'}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" size="xs" color="blue">
+                        {acc.quantity || '-'}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">{acc.description || '-'}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        )}
+
+        {/* Documentos */}
+        {article.documents && article.documents.length > 0 && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Documentos
+            </Title>
+            <Divider mb="xs" />
+            <Stack gap="xs">
+              {article.documents.map((doc: any) => (
+                <Box key={doc.document_id}>
+                  <Group gap="xs">
+                    <Badge variant="light" size="xs" color="blue">
+                      {doc.type}
+                    </Badge>
+                    <Text size="xs" fw={500}>{doc.title}</Text>
+                    {doc.language && (
+                      <Badge variant="outline" size="xs">
+                        {doc.language}
+                      </Badge>
+                    )}
+                    {doc.revision && (
+                      <Badge variant="dot" size="xs">
+                        v{doc.revision}
+                      </Badge>
+                    )}
+                  </Group>
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Condiciones ambientales completas */}
+        {(article.oper_temp_min_c !== null || article.oper_temp_max_c !== null ||
+          article.storage_temp_min_c !== null || article.storage_temp_max_c !== null ||
+          article.oper_humidity_min_pct !== null || article.oper_humidity_max_pct !== null ||
+          article.altitude_max_m !== null) && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Condiciones Ambientales
+            </Title>
+            <Divider mb="xs" />
+            <Grid>
+              {(article.oper_temp_min_c !== null || article.oper_temp_max_c !== null) && (
+                <Grid.Col span={6}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Temp. Operación</Text>
+                  <Badge variant="light" size="xs" color="blue">
+                    {article.oper_temp_min_c !== null && article.oper_temp_max_c !== null
+                      ? `${article.oper_temp_min_c} a ${article.oper_temp_max_c} °C`
+                      : article.oper_temp_min_c !== null
+                      ? `Desde ${article.oper_temp_min_c} °C`
+                      : `Hasta ${article.oper_temp_max_c} °C`}
+                  </Badge>
+                </Grid.Col>
+              )}
+              {(article.storage_temp_min_c !== null || article.storage_temp_max_c !== null) && (
+                <Grid.Col span={6}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Temp. Almacenamiento</Text>
+                  <Badge variant="light" size="xs" color="cyan">
+                    {article.storage_temp_min_c !== null && article.storage_temp_max_c !== null
+                      ? `${article.storage_temp_min_c} a ${article.storage_temp_max_c} °C`
+                      : article.storage_temp_min_c !== null
+                      ? `Desde ${article.storage_temp_min_c} °C`
+                      : `Hasta ${article.storage_temp_max_c} °C`}
+                  </Badge>
+                </Grid.Col>
+              )}
+              {(article.oper_humidity_min_pct !== null || article.oper_humidity_max_pct !== null) && (
+                <Grid.Col span={6}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Humedad Operación</Text>
+                  <Badge variant="light" size="xs" color="teal">
+                    {article.oper_humidity_min_pct !== null && article.oper_humidity_max_pct !== null
+                      ? `${article.oper_humidity_min_pct} a ${article.oper_humidity_max_pct} %RH`
+                      : article.oper_humidity_min_pct !== null
+                      ? `Desde ${article.oper_humidity_min_pct} %RH`
+                      : `Hasta ${article.oper_humidity_max_pct} %RH`}
+                  </Badge>
+                </Grid.Col>
+              )}
+              {article.altitude_max_m !== null && (
+                <Grid.Col span={6}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Altitud Máxima</Text>
+                  <Badge variant="light" size="xs" color="grape">
+                    {article.altitude_max_m} m
+                  </Badge>
+                </Grid.Col>
+              )}
+            </Grid>
+          </Paper>
+        )}
+
+        {/* Certificaciones */}
+        {(article.emc_compliance || article.certifications) && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Certificaciones y Cumplimiento
+            </Title>
+            <Divider mb="xs" />
+            <Grid>
+              {article.emc_compliance && (
+                <Grid.Col span={6}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>EMC Compliance</Text>
+                  <Text size="xs">{article.emc_compliance}</Text>
+                </Grid.Col>
+              )}
+              {article.certifications && (
+                <Grid.Col span={6}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Certificaciones</Text>
+                  <Text size="xs">{article.certifications}</Text>
+                </Grid.Col>
+              )}
+            </Grid>
+          </Paper>
+        )}
+
+        {/* Ciclo de vida */}
+        {(article.first_release_year || article.last_revision_year || article.discontinued) && (
+          <Paper p="sm" className="corporate-card">
+            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
+              Ciclo de Vida
+            </Title>
+            <Divider mb="xs" />
+            <Grid>
+              {article.first_release_year && (
+                <Grid.Col span={4}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Primer Lanzamiento</Text>
+                  <Badge variant="light" size="xs" color="green">
+                    {article.first_release_year}
+                  </Badge>
+                </Grid.Col>
+              )}
+              {article.last_revision_year && (
+                <Grid.Col span={4}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Última Revisión</Text>
+                  <Badge variant="light" size="xs" color="blue">
+                    {article.last_revision_year}
+                  </Badge>
+                </Grid.Col>
+              )}
+              {article.discontinued && (
+                <Grid.Col span={4}>
+                  <Text size="10px" c="dimmed" fw={500} tt="uppercase" mb={4}>Estado</Text>
+                  <Badge variant="filled" size="xs" color="red">
+                    Descontinuado
+                  </Badge>
+                </Grid.Col>
+              )}
+            </Grid>
+          </Paper>
+        )}
+
         {/* Notas internas */}
         {article.internal_notes && (
           <Paper p="sm" className="corporate-card">

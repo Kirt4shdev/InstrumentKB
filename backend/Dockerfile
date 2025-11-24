@@ -2,21 +2,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar dependencias del sistema incluyendo las librerías OpenSSL para Prisma
-RUN apk add --no-cache \
-    postgresql-client \
-    openssl \
-    libc6-compat
+# Instalar cliente PostgreSQL para ejecutar scripts SQL
+RUN apk add --no-cache postgresql-client
 
 # Copiar archivos de dependencias
 COPY package*.json ./
-COPY prisma ./prisma/
 
 # Instalar dependencias
 RUN npm install
 
-# Generar Prisma client
-RUN npx prisma generate
+# Copiar el esquema SQL
+COPY schema.sql ./
 
 # Copiar el resto del código (para hot-reload)
 COPY . .
@@ -26,6 +22,5 @@ RUN mkdir -p uploads/documents uploads/images
 
 EXPOSE 3002
 
-# Script de inicio con migraciones automáticas
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && npm run dev"]
-
+# Script de inicio sin Prisma - solo SQL puro
+CMD ["sh", "-c", "npm run dev"]

@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../prisma';
-import { Prisma } from '@prisma/client';
+import { query } from '../db';
 
 export const searchRouter = Router();
 
-// GET search instruments
+// GET search instruments/articles
 searchRouter.get('/instruments', async (req: Request, res: Response) => {
   try {
     const {
@@ -22,95 +21,141 @@ searchRouter.get('/instruments', async (req: Request, res: Response) => {
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
+    const offset = (pageNum - 1) * limitNum;
 
     // Construir filtros
-    const where: Prisma.InstrumentWhereInput = {};
+    let whereConditions: string[] = [];
+    let params: any[] = [];
+    let paramIndex = 1;
 
+    // Text search
     if (q) {
-      where.OR = [
-        { model: { contains: q as string, mode: 'insensitive' } },
-        { variant: { contains: q as string, mode: 'insensitive' } },
-        { category: { contains: q as string, mode: 'insensitive' } },
-        { article: { sap_description: { contains: q as string, mode: 'insensitive' } } }
-      ];
+      whereConditions.push(`(
+        a.model ILIKE $${paramIndex} OR 
+        a.variant ILIKE $${paramIndex} OR 
+        a.category ILIKE $${paramIndex} OR 
+        a.sap_description ILIKE $${paramIndex}
+      )`);
+      params.push(`%${q}%`);
+      paramIndex++;
     }
 
     if (article_id) {
-      where.article_id = article_id as string;
+      whereConditions.push(`a.article_id = $${paramIndex}`);
+      params.push(article_id);
+      paramIndex++;
     }
 
     if (manufacturer_id) {
-      where.manufacturer_id = parseInt(manufacturer_id as string);
+      whereConditions.push(`a.manufacturer_id = $${paramIndex}`);
+      params.push(parseInt(manufacturer_id as string));
+      paramIndex++;
     }
 
+    // Variable name search (requires subquery)
     if (variable_name) {
-      where.instrument_variables = {
-        some: {
-          variable: {
-            name: { contains: variable_name as string, mode: 'insensitive' }
-          }
-        }
-      };
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM article_variables av
+        JOIN variables_dict v ON av.variable_id = v.variable_id
+        WHERE av.article_id = a.article_id 
+        AND v.name ILIKE $${paramIndex}
+      )`);
+      params.push(`%${variable_name}%`);
+      paramIndex++;
     }
 
+    // Accuracy filter
     if (accuracy_abs_lte) {
-      where.instrument_variables = {
-        some: {
-          accuracy_abs: { lte: parseFloat(accuracy_abs_lte as string) }
-        }
-      };
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM article_variables av
+        WHERE av.article_id = a.article_id 
+        AND av.accuracy_abs <= $${paramIndex}
+      )`);
+      params.push(parseFloat(accuracy_abs_lte as string));
+      paramIndex++;
     }
 
+    // Protocol type filter
     if (protocol_type) {
-      where.instrument_protocols = {
-        some: {
-          type: protocol_type as any
-        }
-      };
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM article_protocols ap
+        WHERE ap.article_id = a.article_id 
+        AND ap.type = $${paramIndex}
+      )`);
+      params.push(protocol_type);
+      paramIndex++;
     }
 
+    // Modbus address filter
     if (modbus_address) {
-      where.modbus_registers = {
-        some: {
-          address: parseInt(modbus_address as string)
-        }
-      };
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM modbus_registers mr
+        WHERE mr.article_id = a.article_id 
+        AND mr.address = $${paramIndex}
+      )`);
+      params.push(parseInt(modbus_address as string));
+      paramIndex++;
     }
 
+    // Tags filter
     if (tags) {
       const tagArray = Array.isArray(tags) ? tags : [tags];
-      where.tags = {
-        some: {
-          tag: { in: tagArray as string[] }
-        }
-      };
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM tags t
+        WHERE t.article_id = a.article_id 
+        AND t.tag = ANY($${paramIndex})
+      )`);
+      params.push(tagArray);
+      paramIndex++;
     }
 
-    // Ejecutar búsqueda
-    const [instruments, total] = await Promise.all([
-      prisma.instrument.findMany({
-        where,
-        skip,
-        take: limitNum,
-        include: {
-          article: true,
-          manufacturer: true,
-          instrument_variables: {
-            include: {
-              variable: true
-            }
-          },
-          instrument_protocols: true,
-          tags: true
-        },
-        orderBy: { created_at: 'desc' }
-      }),
-      prisma.instrument.count({ where })
-    ]);
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Execute search
+    const articlesResult = await query(
+      `SELECT a.*, 
+        row_to_json(m.*) as manufacturer
+       FROM articles a
+       LEFT JOIN manufacturers m ON a.manufacturer_id = m.manufacturer_id
+       ${whereClause}
+       ORDER BY a.created_at DESC
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, limitNum, offset]
+    );
+
+    // Get total count
+    const countResult = await query(
+      `SELECT COUNT(*) as total FROM articles a ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    // Get relations for each article
+    for (const article of articlesResult.rows) {
+      const variablesResult = await query(
+        `SELECT av.*, row_to_json(v.*) as variable
+         FROM article_variables av
+         LEFT JOIN variables_dict v ON av.variable_id = v.variable_id
+         WHERE av.article_id = $1`,
+        [article.article_id]
+      );
+      article.article_variables = variablesResult.rows;
+      
+      const protocolsResult = await query(
+        `SELECT * FROM article_protocols WHERE article_id = $1`,
+        [article.article_id]
+      );
+      article.article_protocols = protocolsResult.rows;
+      
+      const tagsResult = await query(
+        `SELECT * FROM tags WHERE article_id = $1`,
+        [article.article_id]
+      );
+      article.tags = tagsResult.rows;
+    }
 
     res.json({
-      instruments,
+      instruments: articlesResult.rows,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -123,4 +168,3 @@ searchRouter.get('/instruments', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error searching instruments' });
   }
 });
-

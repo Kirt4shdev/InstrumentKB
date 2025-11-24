@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../prisma';
+import { query } from '../db';
 import { z } from 'zod';
 
 export const manufacturersRouter = Router();
@@ -15,10 +15,10 @@ const manufacturerSchema = z.object({
 // GET all manufacturers
 manufacturersRouter.get('/', async (req: Request, res: Response) => {
   try {
-    const manufacturers = await prisma.manufacturer.findMany({
-      orderBy: { name: 'asc' }
-    });
-    res.json(manufacturers);
+    const result = await query(
+      `SELECT * FROM manufacturers ORDER BY name ASC`
+    );
+    res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching manufacturers' });
   }
@@ -28,13 +28,13 @@ manufacturersRouter.get('/', async (req: Request, res: Response) => {
 manufacturersRouter.post('/', async (req: Request, res: Response) => {
   try {
     const data = manufacturerSchema.parse(req.body);
-    const manufacturer = await prisma.manufacturer.create({
-      data: {
-        ...data,
-        support_email: data.support_email || null
-      }
-    });
-    res.status(201).json(manufacturer);
+    const result = await query(
+      `INSERT INTO manufacturers (name, country, website, support_email, notes)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [data.name, data.country || null, data.website || null, data.support_email || null, data.notes || null]
+    );
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -43,4 +43,3 @@ manufacturersRouter.post('/', async (req: Request, res: Response) => {
     }
   }
 });
-

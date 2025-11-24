@@ -48,3 +48,26 @@ export const uploadImage = (formData: FormData) =>
 export const exportJSON = () => api.get('/export/json');
 export const exportExcel = () => api.get('/export/excel', { responseType: 'blob' });
 export const exportSQL = () => api.get('/export/sql');
+
+// Import
+export const importJSON = (formData: FormData) => 
+  api.post('/import/json', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+export const importExcel = (formData: FormData) => 
+  api.post('/import/excel', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+export const importSQL = (formData: FormData) => 
+  api.post('/import/sql', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+// Accessories
+export const getAccessories = (article_id?: string) => 
+  api.get('/accessories', { params: { article_id } });
+export const createAccessory = (data: any) => api.post('/accessories', data);
+export const updateAccessory = (id: number, data: any) => api.put(`/accessories/${id}`, data);
+export const deleteAccessory = (id: number) => api.delete(`/accessories/${id}`);

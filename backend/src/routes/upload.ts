@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { prisma } from '../prisma';
+import { query } from '../db';
 
 export const uploadRouter = Router();
 
@@ -55,23 +55,17 @@ uploadRouter.post('/document', upload.single('file'), async (req: Request, res: 
     const sha256 = await calculateSHA256(req.file.path);
     const relativePath = `/uploads/documents/${req.file.filename}`;
 
-    const { instrument_id, type, title, language, revision, publish_date, notes } = req.body;
+    const { article_id, type, title, language, revision, publish_date, notes } = req.body;
 
-    const document = await prisma.document.create({
-      data: {
-        instrument_id: parseInt(instrument_id),
-        type,
-        title,
-        language,
-        revision,
-        publish_date: publish_date ? new Date(publish_date) : null,
-        url_or_path: relativePath,
-        sha256,
-        notes
-      }
-    });
+    const result = await query(
+      `INSERT INTO documents (article_id, type, title, language, revision, publish_date, url_or_path, sha256, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [article_id, type, title, language || null, revision || null, 
+       publish_date ? new Date(publish_date) : null, relativePath, sha256, notes || null]
+    );
 
-    res.status(201).json(document);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error uploading document:', error);
     res.status(500).json({ error: 'Error uploading document' });
@@ -86,20 +80,16 @@ uploadRouter.post('/image', upload.single('file'), async (req: Request, res: Res
     }
 
     const relativePath = `/uploads/images/${req.file.filename}`;
-    const { instrument_id, caption, credit, license, notes } = req.body;
+    const { article_id, caption, credit, license, notes } = req.body;
 
-    const image = await prisma.image.create({
-      data: {
-        instrument_id: parseInt(instrument_id),
-        caption,
-        url_or_path: relativePath,
-        credit,
-        license,
-        notes
-      }
-    });
+    const result = await query(
+      `INSERT INTO images (article_id, caption, url_or_path, credit, license, notes)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [article_id, caption || null, relativePath, credit || null, license || null, notes || null]
+    );
 
-    res.status(201).json(image);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error uploading image:', error);
     res.status(500).json({ error: 'Error uploading image' });
@@ -110,11 +100,14 @@ uploadRouter.post('/image', upload.single('file'), async (req: Request, res: Res
 uploadRouter.delete('/document/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const document = await prisma.document.findUnique({
-      where: { document_id: id }
-    });
+    const result = await query(
+      `SELECT * FROM documents WHERE document_id = $1`,
+      [id]
+    );
 
-    if (document) {
+    if (result.rows.length > 0) {
+      const document = result.rows[0];
+      
       // Eliminar archivo físico
       const filePath = path.join(process.cwd(), document.url_or_path);
       if (fs.existsSync(filePath)) {
@@ -122,9 +115,7 @@ uploadRouter.delete('/document/:id', async (req: Request, res: Response) => {
       }
 
       // Eliminar registro
-      await prisma.document.delete({
-        where: { document_id: id }
-      });
+      await query('DELETE FROM documents WHERE document_id = $1', [id]);
     }
 
     res.json({ message: 'Document deleted successfully' });
@@ -137,11 +128,14 @@ uploadRouter.delete('/document/:id', async (req: Request, res: Response) => {
 uploadRouter.delete('/image/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const image = await prisma.image.findUnique({
-      where: { image_id: id }
-    });
+    const result = await query(
+      `SELECT * FROM images WHERE image_id = $1`,
+      [id]
+    );
 
-    if (image) {
+    if (result.rows.length > 0) {
+      const image = result.rows[0];
+      
       // Eliminar archivo físico
       const filePath = path.join(process.cwd(), image.url_or_path);
       if (fs.existsSync(filePath)) {
@@ -149,9 +143,7 @@ uploadRouter.delete('/image/:id', async (req: Request, res: Response) => {
       }
 
       // Eliminar registro
-      await prisma.image.delete({
-        where: { image_id: id }
-      });
+      await query('DELETE FROM images WHERE image_id = $1', [id]);
     }
 
     res.json({ message: 'Image deleted successfully' });
@@ -159,4 +151,3 @@ uploadRouter.delete('/image/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error deleting image' });
   }
 });
-

@@ -60,6 +60,12 @@ export interface Article {
   oper_humidity_max_pct?: number;
   altitude_max_m?: number;
   
+  // Calefacción
+  has_heating?: boolean;
+  heating_consumption_w?: number;
+  heating_temp_min_c?: number;
+  heating_temp_max_c?: number;
+  
   // Certificaciones
   emc_compliance?: string;
   certifications?: string;
@@ -92,6 +98,7 @@ export interface Article {
   modbus_registers?: ModbusRegister[];
   sdi12_commands?: SDI12Command[];
   nmea_sentences?: NMEASentence[];
+  accessories?: Accessory[];
   replaced_by?: Article[];
   replacement_for?: Article;
 }
@@ -231,6 +238,17 @@ export interface NMEASentence {
   description?: string;
   fields?: string;
   reference_document_id?: number;
+}
+
+export interface Accessory {
+  accessory_id: number;
+  article_id: string;
+  name: string;
+  part_number?: string;
+  description?: string;
+  quantity?: number;
+  notes?: string;
+  created_at?: string;
 }
 
 export interface ArticleTypeOption {

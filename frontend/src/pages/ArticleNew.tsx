@@ -17,11 +17,8 @@ import {
   Tabs,
   Table,
   ActionIcon,
-  Modal,
   Text,
-  Badge,
   Tooltip,
-  Autocomplete,
   Box,
   Divider,
 } from '@mantine/core';
@@ -37,6 +34,7 @@ import {
   getArticle,
   updateArticle,
   createManufacturer,
+  createVariable,
 } from '../api';
 import { ArticleTypeOption } from '../types';
 
@@ -81,6 +79,7 @@ function ArticleNew() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [accessories, setAccessories] = useState<any[]>([]);
   const [newTag, setNewTag] = useState('');
   const [manufacturerValue, setManufacturerValue] = useState('');
 
@@ -120,6 +119,12 @@ function ArticleNew() {
       oper_humidity_min_pct: '',
       oper_humidity_max_pct: '',
       altitude_max_m: '',
+      
+      // Calefacción
+      has_heating: false,
+      heating_consumption_w: '',
+      heating_temp_min_c: '',
+      heating_temp_max_c: '',
       
       // Certificaciones
       emc_compliance: '',
@@ -183,6 +188,10 @@ function ArticleNew() {
         oper_humidity_min_pct: article.oper_humidity_min_pct || '',
         oper_humidity_max_pct: article.oper_humidity_max_pct || '',
         altitude_max_m: article.altitude_max_m || '',
+        has_heating: article.has_heating || false,
+        heating_consumption_w: article.heating_consumption_w || '',
+        heating_temp_min_c: article.heating_temp_min_c || '',
+        heating_temp_max_c: article.heating_temp_max_c || '',
         emc_compliance: article.emc_compliance || '',
         certifications: article.certifications || '',
         first_release_year: article.first_release_year || '',
@@ -196,8 +205,14 @@ function ArticleNew() {
         setManufacturerValue(article.manufacturer.name);
       }
       
-      // Poblar las relaciones
-      if (article.article_variables) setArticleVariables(article.article_variables);
+      // Poblar las relaciones - agregar nombres de variables
+      if (article.article_variables) {
+        const variablesWithNames = article.article_variables.map((av: any) => ({
+          ...av,
+          variable_name: av.variable?.name || ''
+        }));
+        setArticleVariables(variablesWithNames);
+      }
       if (article.article_protocols) setArticleProtocols(article.article_protocols);
       if (article.analog_outputs) setAnalogOutputs(article.analog_outputs);
       if (article.digital_io) setDigitalIO(article.digital_io);
@@ -207,6 +222,7 @@ function ArticleNew() {
       if (article.documents) setDocuments(article.documents);
       if (article.images) setImages(article.images);
       if (article.tags) setTags(article.tags.map((t: any) => t.tag));
+      if (article.accessories) setAccessories(article.accessories);
       
     } catch (error) {
       console.error('Error loading article:', error);
@@ -255,12 +271,47 @@ function ArticleNew() {
         return;
       }
       
+      // Si hay un nombre de fabricante pero no ID, crear el fabricante primero
+      if (manufacturerValue.trim() && !values.manufacturer_id) {
+        try {
+          const response = await createManufacturer({ name: manufacturerValue.trim() });
+          const newManufacturer = response.data;
+          
+          // Agregar a la lista local
+          setManufacturers([...manufacturers, newManufacturer]);
+          
+          // Establecer el ID para usar en el artículo
+          values.manufacturer_id = newManufacturer.manufacturer_id.toString();
+          
+          console.log(`✅ Nuevo fabricante creado: ${newManufacturer.name}`);
+        } catch (error: any) {
+          // Si el error es por duplicado, buscar y usar el existente
+          if (error.response?.status === 400 || error.response?.status === 500) {
+            try {
+              const manufacturersRes = await getManufacturers();
+              setManufacturers(manufacturersRes.data);
+              
+              const found = manufacturersRes.data.find(
+                (m: any) => m.name.toLowerCase() === manufacturerValue.toLowerCase()
+              );
+              
+              if (found) {
+                values.manufacturer_id = found.manufacturer_id.toString();
+                console.log(`✅ Usando fabricante existente: ${found.name}`);
+              }
+            } catch (reloadError) {
+              console.error('Error reloading manufacturers:', reloadError);
+            }
+          }
+        }
+      }
+      
       // Preparar datos
       const data: any = {};
       
       // Copiar solo campos con valores
       Object.keys(values).forEach(key => {
-        const value = values[key];
+        const value = (values as any)[key];
         if (value !== '' && value !== null && value !== undefined) {
           // Convertir manufacturer_id de string a número
           if (key === 'manufacturer_id') {
@@ -274,9 +325,60 @@ function ArticleNew() {
         }
       });
       
-      // Agregar relaciones solo si tienen datos
+      // Procesar variables: crear las que no existen y obtener sus IDs
       if (articleVariables.length > 0) {
-        data.article_variables = articleVariables.filter(v => v.variable_id);
+        const processedVariables = [];
+        
+        for (const v of articleVariables) {
+          if (v.variable_name && v.variable_name.trim()) {
+            // Buscar si la variable existe
+            let existingVariable = variables.find(
+              variable => variable.name.toLowerCase() === v.variable_name.toLowerCase()
+            );
+            
+            // Si no existe, crearla
+            if (!existingVariable) {
+              try {
+                const response = await createVariable({ name: v.variable_name.trim() });
+                existingVariable = response.data;
+                // Agregar a la lista local
+                setVariables([...variables, existingVariable]);
+                console.log(`✅ Nueva variable creada: ${existingVariable.name}`);
+              } catch (error: any) {
+                // Si el error es por duplicado, recargar variables y buscar
+                if (error.response?.status === 400 || error.response?.status === 500) {
+                  try {
+                    const variablesRes = await getVariables();
+                    setVariables(variablesRes.data);
+                    existingVariable = variablesRes.data.find(
+                      (variable: any) => variable.name.toLowerCase() === v.variable_name.toLowerCase()
+                    );
+                  } catch (reloadError) {
+                    console.error('Error reloading variables:', reloadError);
+                  }
+                }
+              }
+            }
+            
+            // Agregar la variable con su ID
+            if (existingVariable) {
+              processedVariables.push({
+                variable_id: existingVariable.variable_id,
+                range_min: v.range_min || null,
+                range_max: v.range_max || null,
+                unit: v.unit || null,
+                accuracy_abs: v.accuracy_abs || null,
+                resolution: v.resolution || null,
+                update_rate_hz: v.update_rate_hz || null,
+                notes: v.notes || null
+              });
+            }
+          }
+        }
+        
+        if (processedVariables.length > 0) {
+          data.article_variables = processedVariables;
+        }
       }
       if (articleProtocols.length > 0) {
         data.article_protocols = articleProtocols.filter(p => p.type);
@@ -304,6 +406,9 @@ function ArticleNew() {
       }
       if (tags.length > 0) {
         data.tags = tags;
+      }
+      if (accessories.length > 0) {
+        data.accessories = accessories.filter(acc => acc.name);
       }
       
       // Crear o actualizar según el modo
@@ -354,7 +459,7 @@ function ArticleNew() {
   // Funciones para agregar elementos
   const addVariable = () => {
     setArticleVariables([...articleVariables, {
-      variable_id: '',
+      variable_name: '',
       range_min: '',
       range_max: '',
       unit: '',
@@ -367,7 +472,7 @@ function ArticleNew() {
 
   const addProtocol = () => {
     setArticleProtocols([...articleProtocols, {
-      type: 'ModbusRTU',
+      type: '',
       physical_layer: '',
       port_label: '',
       default_address: '',
@@ -383,19 +488,19 @@ function ArticleNew() {
 
   const addAnalogOutput = () => {
     setAnalogOutputs([...analogOutputs, {
-      type: 'Current_4_20mA',
+      type: '',
       num_channels: 1,
       range_min: '',
       range_max: '',
       unit: '',
-      notes: ''
+      scaling_notes: ''
     }]);
   };
 
   const addDigitalIO = () => {
     setDigitalIO([...digitalIO, {
-      direction: 'input',
-      signal_type: 'TTL',
+      direction: '',
+      signal_type: '',
       voltage_level: '',
       notes: ''
     }]);
@@ -407,8 +512,8 @@ function ArticleNew() {
       address: '',
       name: '',
       description: '',
-      datatype: 'INT16',
-      rw: 'R',
+      datatype: '',
+      rw: '',
       unit: '',
       notes: ''
     }]);
@@ -432,7 +537,7 @@ function ArticleNew() {
 
   const addDocument = () => {
     setDocuments([...documents, {
-      type: 'datasheet',
+      type: '',
       title: '',
       language: '',
       url_or_path: ''
@@ -453,6 +558,16 @@ function ArticleNew() {
     }
   };
 
+  const addAccessory = () => {
+    setAccessories([...accessories, {
+      name: '',
+      part_number: '',
+      description: '',
+      quantity: 1,
+      notes: ''
+    }]);
+  };
+
   // Funciones para eliminar elementos
   const removeItem = (list: any[], setList: Function, index: number) => {
     setList(list.filter((_, i) => i !== index));
@@ -464,8 +579,8 @@ function ArticleNew() {
     setList(newList);
   };
 
-  // Manejar el cambio de fabricante con autocompletado
-  const handleManufacturerChange = async (value: string) => {
+  // Manejar el cambio de fabricante (se procesará al guardar)
+  const handleManufacturerChange = (value: string) => {
     setManufacturerValue(value);
     
     // Buscar si el fabricante existe en la lista (búsqueda case-insensitive)
@@ -476,50 +591,8 @@ function ArticleNew() {
     if (existingManufacturer) {
       // Si existe, usar su ID
       form.setFieldValue('manufacturer_id', existingManufacturer.manufacturer_id.toString());
-    } else if (value.trim()) {
-      // Si no existe y no está vacío, crear uno nuevo automáticamente
-      try {
-        const response = await createManufacturer({ name: value.trim() });
-        const newManufacturer = response.data;
-        
-        // Agregar a la lista local
-        setManufacturers([...manufacturers, newManufacturer]);
-        
-        // Establecer el ID en el formulario
-        form.setFieldValue('manufacturer_id', newManufacturer.manufacturer_id.toString());
-        
-        console.log(`✅ Nuevo fabricante creado: ${newManufacturer.name}`);
-      } catch (error: any) {
-        console.error('Error creating manufacturer:', error);
-        
-        // Si el error es por duplicado, buscar y usar el existente
-        if (error.response?.status === 400 || error.response?.status === 500) {
-          // Recargar la lista de fabricantes para obtener el que podría haberse creado
-          try {
-            const manufacturersRes = await getManufacturers();
-            setManufacturers(manufacturersRes.data);
-            
-            // Buscar de nuevo el fabricante
-            const found = manufacturersRes.data.find(
-              (m: any) => m.name.toLowerCase() === value.toLowerCase()
-            );
-            
-            if (found) {
-              form.setFieldValue('manufacturer_id', found.manufacturer_id.toString());
-              console.log(`✅ Usando fabricante existente: ${found.name}`);
-            } else {
-              form.setFieldValue('manufacturer_id', '');
-            }
-          } catch (reloadError) {
-            console.error('Error reloading manufacturers:', reloadError);
-            form.setFieldValue('manufacturer_id', '');
-          }
-        } else {
-          form.setFieldValue('manufacturer_id', '');
-        }
-      }
     } else {
-      // Si está vacío, limpiar el ID
+      // Si no existe, limpiar el ID (se creará al guardar)
       form.setFieldValue('manufacturer_id', '');
     }
   };
@@ -530,7 +603,7 @@ function ArticleNew() {
     
     // Copiar solo campos con valores
     Object.keys(form.values).forEach(key => {
-      const value = form.values[key];
+      const value = (form.values as any)[key];
       if (value !== '' && value !== null && value !== undefined) {
         preview[key] = value;
       }
@@ -547,6 +620,7 @@ function ArticleNew() {
     if (documents.length > 0) preview.documents = documents;
     if (images.length > 0) preview.images = images;
     if (tags.length > 0) preview.tags = tags;
+    if (accessories.length > 0) preview.accessories = accessories;
     
     return preview;
   };
@@ -720,18 +794,16 @@ function ArticleNew() {
                       <Title order={5} mb="md">Fabricante y Modelo</Title>
                       <Grid>
                         <Grid.Col span={6}>
-                          <Autocomplete
+                          <TextInput
                             label={
                               <LabelWithTooltip
                                 label="Fabricante"
-                                tooltip="Empresa que fabrica el artículo. Escribe para buscar en la lista de fabricantes registrados o ingresa un nombre nuevo para crear uno automáticamente."
+                                tooltip="Empresa que fabrica el artículo. Escribe el nombre del fabricante. Si no existe, se creará automáticamente al guardar el artículo."
                               />
                             }
-                            placeholder="Escribe o selecciona un fabricante"
-                            data={manufacturers.map(m => m.name)}
+                            placeholder="Escribe el nombre del fabricante"
                             value={manufacturerValue}
-                            onChange={handleManufacturerChange}
-                            limit={10}
+                            onChange={(e) => handleManufacturerChange(e.target.value)}
                           />
                         </Grid.Col>
                         <Grid.Col span={3}>
@@ -919,6 +991,63 @@ function ArticleNew() {
                             {...form.getInputProps('color')}
                           />
                         </Grid.Col>
+                      </Grid>
+                    </Paper>
+
+                    <Paper p="md" withBorder>
+                      <Title order={5} mb="md">Sistema de Calefacción</Title>
+                      <Grid>
+                        <Grid.Col span={12}>
+                          <Switch
+                            label={
+                              <LabelWithTooltip
+                                label="¿Tiene Calefacción?"
+                                tooltip="Indica si el equipo cuenta con un sistema de calefacción integrado para operación en ambientes fríos."
+                              />
+                            }
+                            {...form.getInputProps('has_heating', { type: 'checkbox' })}
+                          />
+                        </Grid.Col>
+                        {form.values.has_heating && (
+                          <>
+                            <Grid.Col span={4}>
+                              <NumberInput
+                                label={
+                                  <LabelWithTooltip
+                                    label="Consumo Calefacción (W)"
+                                    tooltip="Consumo de potencia del sistema de calefacción en Watts. Ejemplo: 50W. Importante para dimensionar la fuente de alimentación."
+                                  />
+                                }
+                                placeholder="50"
+                                {...form.getInputProps('heating_consumption_w')}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={4}>
+                              <NumberInput
+                                label={
+                                  <LabelWithTooltip
+                                    label="Temp. Mín Calefacción (°C)"
+                                    tooltip="Temperatura mínima del rango de operación de la calefacción. Ejemplo: -40°C. Por debajo, la calefacción no puede mantener el equipo operativo."
+                                  />
+                                }
+                                placeholder="-40"
+                                {...form.getInputProps('heating_temp_min_c')}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={4}>
+                              <NumberInput
+                                label={
+                                  <LabelWithTooltip
+                                    label="Temp. Máx Calefacción (°C)"
+                                    tooltip="Temperatura máxima del rango de operación de la calefacción. Ejemplo: 0°C. Por encima, la calefacción se desactiva."
+                                  />
+                                }
+                                placeholder="0"
+                                {...form.getInputProps('heating_temp_max_c')}
+                              />
+                            </Grid.Col>
+                          </>
+                        )}
                       </Grid>
                     </Paper>
 
@@ -1138,14 +1267,10 @@ function ArticleNew() {
                             {articleVariables.map((v, i) => (
                               <Table.Tr key={i}>
                                 <Table.Td>
-                                  <Select
-                                    data={variables.map(variable => ({ 
-                                      value: variable.variable_id.toString(), 
-                                      label: variable.name 
-                                    }))}
-                                    value={v.variable_id?.toString()}
-                                    onChange={(val) => updateItem(articleVariables, setArticleVariables, i, 'variable_id', parseInt(val || '0'))}
-                                    searchable
+                                  <TextInput
+                                    placeholder="Nombre de la variable"
+                                    value={v.variable_name || ''}
+                                    onChange={(e) => updateItem(articleVariables, setArticleVariables, i, 'variable_name', e.target.value)}
                                   />
                                 </Table.Td>
                                 <Table.Td>
@@ -1227,39 +1352,19 @@ function ArticleNew() {
                                   <Grid.Col span={11}>
                                     <Grid>
                                       <Grid.Col span={4}>
-                                        <Select
+                                        <TextInput
                                           label="Protocolo"
-                                          data={[
-                                            { value: 'ModbusRTU', label: 'Modbus RTU' },
-                                            { value: 'ModbusTCP', label: 'Modbus TCP/IP' },
-                                            { value: 'SDI12', label: 'SDI-12' },
-                                            { value: 'NMEA0183', label: 'NMEA 0183' },
-                                            { value: 'CANopen', label: 'CANopen' },
-                                            { value: 'Profinet', label: 'Profinet' },
-                                            { value: 'EthernetIP', label: 'Ethernet/IP' },
-                                            { value: 'Other', label: 'Otro' }
-                                          ]}
+                                          placeholder="ModbusRTU, ModbusTCP, SDI12, NMEA0183..."
                                           value={p.type}
-                                          onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'type', val)}
-                                          required
+                                          onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'type', e.target.value)}
                                         />
                                       </Grid.Col>
                                       <Grid.Col span={4}>
-                                        <Select
+                                        <TextInput
                                           label="Capa Física"
-                                          data={[
-                                            { value: '', label: '(Ninguna)' },
-                                            { value: 'RS232', label: 'RS-232' },
-                                            { value: 'RS485', label: 'RS-485' },
-                                            { value: 'RS422', label: 'RS-422' },
-                                            { value: 'Ethernet', label: 'Ethernet' },
-                                            { value: 'CAN', label: 'CAN Bus' },
-                                            { value: 'USB', label: 'USB' },
-                                            { value: 'Wireless', label: 'Inalámbrico' },
-                                            { value: 'Fiber', label: 'Fibra óptica' }
-                                          ]}
+                                          placeholder="RS232, RS485, RS422, Ethernet, CAN..."
                                           value={p.physical_layer || ''}
-                                          onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'physical_layer', val)}
+                                          onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'physical_layer', e.target.value)}
                                         />
                                       </Grid.Col>
                                       <Grid.Col span={4}>
@@ -1278,42 +1383,35 @@ function ArticleNew() {
                                             <Text size="sm" fw={600} c="dimmed">Configuración Serial</Text>
                                           </Grid.Col>
                                           <Grid.Col span={3}>
-                                            <Select
+                                            <NumberInput
                                               label="Baudrate"
-                                              data={[
-                                                '1200', '2400', '4800', '9600', '19200', 
-                                                '38400', '57600', '115200'
-                                              ]}
-                                              value={p.baudrate?.toString() || ''}
-                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'baudrate', val ? parseInt(val) : null)}
+                                              placeholder="9600"
+                                              value={p.baudrate || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'baudrate', val)}
                                             />
                                           </Grid.Col>
                                           <Grid.Col span={3}>
-                                            <Select
+                                            <NumberInput
                                               label="Data Bits"
-                                              data={['7', '8']}
-                                              value={p.databits?.toString() || ''}
-                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'databits', val ? parseInt(val) : null)}
+                                              placeholder="8"
+                                              value={p.databits || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'databits', val)}
                                             />
                                           </Grid.Col>
                                           <Grid.Col span={3}>
-                                            <Select
+                                            <TextInput
                                               label="Paridad"
-                                              data={[
-                                                { value: 'N', label: 'None (N)' },
-                                                { value: 'E', label: 'Even (E)' },
-                                                { value: 'O', label: 'Odd (O)' }
-                                              ]}
+                                              placeholder="N, E, O"
                                               value={p.parity || ''}
-                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'parity', val)}
+                                              onChange={(e) => updateItem(articleProtocols, setArticleProtocols, i, 'parity', e.target.value)}
                                             />
                                           </Grid.Col>
                                           <Grid.Col span={3}>
-                                            <Select
+                                            <NumberInput
                                               label="Stop Bits"
-                                              data={['1', '2']}
-                                              value={p.stopbits?.toString() || ''}
-                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'stopbits', val ? parseInt(val) : null)}
+                                              placeholder="1"
+                                              value={p.stopbits || ''}
+                                              onChange={(val) => updateItem(articleProtocols, setArticleProtocols, i, 'stopbits', val)}
                                             />
                                           </Grid.Col>
                                           <Grid.Col span={12}>
@@ -1407,16 +1505,16 @@ function ArticleNew() {
                         {analogOutputs.map((ao, i) => (
                           <Grid key={i} mb="sm">
                             <Grid.Col span={3}>
-                              <Select
+                              <TextInput
                                 label={
                                   <LabelWithTooltip
                                     label="Tipo"
-                                    tooltip="Tipo de salida analógica. 4-20mA es estándar industrial (permite detectar cable roto porque 0mA indica fallo), 0-10V común en automatización de edificios."
+                                    tooltip="Tipo de salida analógica. Ejemplo: Current_4_20mA, Voltage_0_10V, Pulse, Relay, TTL, Other"
                                   />
                                 }
-                                data={['Current_4_20mA', 'Voltage_0_10V', 'Pulse', 'Relay', 'TTL', 'Other']}
+                                placeholder="Current_4_20mA, Voltage_0_10V..."
                                 value={ao.type}
-                                onChange={(val) => updateItem(analogOutputs, setAnalogOutputs, i, 'type', val)}
+                                onChange={(e) => updateItem(analogOutputs, setAnalogOutputs, i, 'type', e.target.value)}
                               />
                             </Grid.Col>
                             <Grid.Col span={2}>
@@ -1447,12 +1545,12 @@ function ArticleNew() {
                               <TextInput
                                 label={
                                   <LabelWithTooltip
-                                    label="Notas"
-                                    tooltip="Información adicional sobre esta salida analógica."
+                                    label="Notas de Escalado"
+                                    tooltip="Información adicional sobre el escalado y configuración de esta salida analógica."
                                   />
                                 }
-                                value={ao.notes}
-                                onChange={(e) => updateItem(analogOutputs, setAnalogOutputs, i, 'notes', e.target.value)}
+                                value={ao.scaling_notes}
+                                onChange={(e) => updateItem(analogOutputs, setAnalogOutputs, i, 'scaling_notes', e.target.value)}
                               />
                             </Grid.Col>
                             <Grid.Col span={1}>
@@ -1479,29 +1577,29 @@ function ArticleNew() {
                         {digitalIO.map((dio, i) => (
                           <Grid key={i} mb="sm">
                             <Grid.Col span={3}>
-                              <Select
+                              <TextInput
                                 label={
                                   <LabelWithTooltip
                                     label="Dirección"
-                                    tooltip="Tipo de señal. Input = entrada (el dispositivo recibe la señal), Output = salida (el dispositivo genera la señal)."
+                                    tooltip="Tipo de señal. Ejemplo: input, output"
                                   />
                                 }
-                                data={['input', 'output']}
+                                placeholder="input, output"
                                 value={dio.direction}
-                                onChange={(val) => updateItem(digitalIO, setDigitalIO, i, 'direction', val)}
+                                onChange={(e) => updateItem(digitalIO, setDigitalIO, i, 'direction', e.target.value)}
                               />
                             </Grid.Col>
                             <Grid.Col span={3}>
-                              <Select
+                              <TextInput
                                 label={
                                   <LabelWithTooltip
                                     label="Tipo de Señal"
-                                    tooltip="Tecnología de la señal. TTL (0-5V lógica digital), Relay (contacto seco), Pulse (señal pulsante), 4-20mA (señal de corriente)."
+                                    tooltip="Tecnología de la señal. Ejemplo: TTL, Relay, Pulse, Current_4_20mA"
                                   />
                                 }
-                                data={['Current_4_20mA', 'Voltage_0_10V', 'Pulse', 'Relay', 'TTL', 'Other']}
+                                placeholder="TTL, Relay, Pulse..."
                                 value={dio.signal_type}
-                                onChange={(val) => updateItem(digitalIO, setDigitalIO, i, 'signal_type', val)}
+                                onChange={(e) => updateItem(digitalIO, setDigitalIO, i, 'signal_type', e.target.value)}
                               />
                             </Grid.Col>
                             <Grid.Col span={2}>
@@ -1612,29 +1710,29 @@ function ArticleNew() {
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={2}>
-                                      <Select
+                                      <TextInput
                                         label={
                                           <LabelWithTooltip
                                             label="Tipo Dato"
-                                            tooltip="Tipo de dato del registro. INT16 (entero 16 bits con signo), UINT16 (sin signo), FLOAT32 (decimal de precisión simple, ocupa 2 registros)."
+                                            tooltip="Tipo de dato del registro. Ejemplo: INT16, UINT16, INT32, UINT32, FLOAT32"
                                           />
                                         }
-                                        data={['INT16', 'UINT16', 'INT32', 'UINT32', 'FLOAT32']}
+                                        placeholder="INT16, UINT16..."
                                         value={reg.datatype}
-                                        onChange={(val) => updateItem(modbusRegisters, setModbusRegisters, i, 'datatype', val)}
+                                        onChange={(e) => updateItem(modbusRegisters, setModbusRegisters, i, 'datatype', e.target.value)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={2}>
-                                      <Select
+                                      <TextInput
                                         label={
                                           <LabelWithTooltip
                                             label="R/W"
-                                            tooltip="Permisos del registro. R=Solo lectura (valores medidos), W=Solo escritura (configuración), RW=Lectura/Escritura."
+                                            tooltip="Permisos del registro. Ejemplo: R, W, RW"
                                           />
                                         }
-                                        data={['R', 'W', 'RW']}
+                                        placeholder="R, W, RW"
                                         value={reg.rw}
-                                        onChange={(val) => updateItem(modbusRegisters, setModbusRegisters, i, 'rw', val)}
+                                        onChange={(e) => updateItem(modbusRegisters, setModbusRegisters, i, 'rw', e.target.value)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={6}>
@@ -1882,16 +1980,16 @@ function ArticleNew() {
                                 <Grid.Col span={11}>
                                   <Grid>
                                     <Grid.Col span={3}>
-                                      <Select
+                                      <TextInput
                                         label={
                                           <LabelWithTooltip
                                             label="Tipo"
-                                            tooltip="Tipo de documento. Datasheet=hoja de especificaciones técnicas, Manual=manual de usuario/instalación, Certificate=certificado de calibración, Drawing=plano/esquema."
+                                            tooltip="Tipo de documento. Ejemplo: datasheet, manual, certificate, drawing, other"
                                           />
                                         }
-                                        data={['datasheet', 'manual', 'certificate', 'drawing', 'other']}
+                                        placeholder="datasheet, manual..."
                                         value={doc.type}
-                                        onChange={(val) => updateItem(documents, setDocuments, i, 'type', val)}
+                                        onChange={(e) => updateItem(documents, setDocuments, i, 'type', e.target.value)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={6}>
@@ -2040,6 +2138,89 @@ function ArticleNew() {
                           </Group>
                         ))}
                       </Group>
+                    </Paper>
+
+                    {/* Accesorios */}
+                    <Paper p="md" withBorder>
+                      <Group justify="space-between" mb="md">
+                        <Title order={5}>Accesorios</Title>
+                        <Button onClick={addAccessory} leftSection={<IconPlus size={16} />} size="xs">
+                          Agregar Accesorio
+                        </Button>
+                      </Group>
+                      {accessories.length === 0 ? (
+                        <Text c="dimmed" ta="center" py="md">
+                          No hay accesorios agregados
+                        </Text>
+                      ) : (
+                        <Stack gap="sm">
+                          {accessories.map((acc, i) => (
+                            <Grid key={i}>
+                              <Grid.Col span={3}>
+                                <TextInput
+                                  label={
+                                    <LabelWithTooltip
+                                      label="Nombre"
+                                      tooltip="Nombre del accesorio. Ejemplo: 'Cable de conexión', 'Soporte de montaje', 'Manual de usuario'"
+                                    />
+                                  }
+                                  placeholder="Cable de conexión"
+                                  value={acc.name}
+                                  onChange={(e) => updateItem(accessories, setAccessories, i, 'name', e.target.value)}
+                                />
+                              </Grid.Col>
+                              <Grid.Col span={3}>
+                                <TextInput
+                                  label={
+                                    <LabelWithTooltip
+                                      label="Part Number"
+                                      tooltip="Número de parte del accesorio según el fabricante. Ejemplo: 'ACC-CBL-001'"
+                                    />
+                                  }
+                                  placeholder="ACC-CBL-001"
+                                  value={acc.part_number}
+                                  onChange={(e) => updateItem(accessories, setAccessories, i, 'part_number', e.target.value)}
+                                />
+                              </Grid.Col>
+                              <Grid.Col span={2}>
+                                <NumberInput
+                                  label={
+                                    <LabelWithTooltip
+                                      label="Cantidad"
+                                      tooltip="Cantidad de unidades del accesorio incluidas. Ejemplo: 2 para dos cables"
+                                    />
+                                  }
+                                  min={1}
+                                  value={acc.quantity}
+                                  onChange={(val) => updateItem(accessories, setAccessories, i, 'quantity', val)}
+                                />
+                              </Grid.Col>
+                              <Grid.Col span={3}>
+                                <TextInput
+                                  label={
+                                    <LabelWithTooltip
+                                      label="Descripción"
+                                      tooltip="Breve descripción del accesorio y su función"
+                                    />
+                                  }
+                                  placeholder="Cable de 2m para conexión..."
+                                  value={acc.description}
+                                  onChange={(e) => updateItem(accessories, setAccessories, i, 'description', e.target.value)}
+                                />
+                              </Grid.Col>
+                              <Grid.Col span={1}>
+                                <ActionIcon 
+                                  color="red" 
+                                  onClick={() => removeItem(accessories, setAccessories, i)}
+                                  mt="xl"
+                                >
+                                  <IconTrash size={16} />
+                                </ActionIcon>
+                              </Grid.Col>
+                            </Grid>
+                          ))}
+                        </Stack>
+                      )}
                     </Paper>
 
                     {/* Notas */}

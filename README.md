@@ -1,79 +1,73 @@
-# 📊 InstrumentKB - Knowledge Base de Instrumentos de Medida
+# 📊 InstrumentKB - Knowledge Base SAP
 
-Plataforma interna para registrar, visualizar y buscar información técnica de **instrumentos de medida** (sensores, dataloggers, transmisores, etc.) utilizados en proyectos industriales.
+Sistema de gestión de catálogo SAP para instrumentos y equipos industriales. Plataforma interna para registrar, visualizar y buscar información técnica de artículos del catálogo.
 
 ## 🎯 Características
 
-- ✅ Gestión completa de instrumentos con especificaciones técnicas detalladas
+- ✅ Gestión completa de artículos con especificaciones técnicas detalladas
+- ✅ Integración con códigos SAP (ItemCode)
 - ✅ Variables de medición con precisión, rango y resolución
 - ✅ Protocolos de comunicación (Modbus RTU/TCP, SDI-12, NMEA, etc.)
 - ✅ Mapas de registros Modbus
 - ✅ Salidas analógicas y digitales
-- ✅ Gestión de documentos técnicos y imágenes
-- ✅ Sistema de etiquetas y trazabilidad
+- ✅ Gestión de documentos técnicos e imágenes
+- ✅ Sistema de etiquetas y clasificación
 - ✅ Búsqueda avanzada con múltiples filtros
-- ✅ **JSON viewer en tiempo real** mientras se edita
-- ✅ **Exportación completa a JSON y SQL**
+- ✅ JSON viewer en tiempo real
+- ✅ Exportación completa a JSON, Excel y SQL
 
 ## 🏗️ Arquitectura
 
 ### Backend
-- **Node.js** + **Express.js**
-- **Prisma** ORM con **PostgreSQL**
-- **Zod** para validación
-- Storage local o S3-compatible
+- **Node.js** + **Express.js** + **TypeScript**
+- **PostgreSQL** (SQL puro)
+- Storage local para documentos e imágenes
 - API REST completa
 
 ### Frontend
-- **React 18** + **Vite**
-- **Mantine UI** (componentes modernos)
-- **React Hook Form** para formularios
-- **react-json-view-lite** para visualización JSON en tiempo real
+- **React 18** + **Vite** + **TypeScript**
+- **Mantine UI** v7 (componentes modernos)
+- **react-json-view-lite** para visualización JSON
 - **Axios** para comunicación con API
 
 ### Base de Datos
-- **PostgreSQL** (SQL puro, sin JSONB)
-- 14 tablas relacionales con todas las especificaciones
+- **PostgreSQL** (SQL puro, sin ORM)
+- 14 tablas relacionales con foreign keys
+- Relaciones con CASCADE DELETE
 
 ## 🚀 Inicio Rápido
 
 ### Prerequisitos
 
-- Node.js 20+ 
+- Node.js 20+
 - PostgreSQL 16+
-- npm o yarn
+- npm
 
 ### Opción 1: Con Docker Compose (Recomendado)
 
 ```bash
-# Clonar o descomprimir el proyecto
-cd InstrumentKB
-
 # Levantar todos los servicios
 docker-compose up -d
 
-# Esperar a que los servicios estén listos
-# El frontend estará en http://localhost:3000
-# El backend en http://localhost:3001
-# PostgreSQL en localhost:5432
+# La aplicación estará disponible en:
+# Aplicación completa (Nginx): http://localhost:8080
+# Frontend directo: http://localhost:3000 (desarrollo)
+# Backend API directo: http://localhost:3002 (desarrollo)
+# PostgreSQL: localhost:5434
 ```
 
-**Aplicar migraciones de base de datos:**
-
-```bash
-cd backend
-docker-compose exec backend npx prisma migrate dev --name init
-```
+**Nota:** En producción, usa el puerto 8080 (Nginx) que hace de proxy reverso para frontend y backend.
 
 ### Opción 2: Instalación Manual
 
-#### 1. Base de datos
+#### 1. Base de Datos
 
 ```bash
 # Crear base de datos PostgreSQL
-createdb instruments
-# O mediante psql:
-psql -U postgres -c "CREATE DATABASE instruments;"
+createdb instrumentkb
+
+# Importar esquema
+psql -U postgres -d instrumentkb -f backend/schema.sql
 ```
 
 #### 2. Backend
@@ -84,21 +78,19 @@ cd backend
 # Instalar dependencias
 npm install
 
-# Copiar y configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales de PostgreSQL
+# Configurar variables de entorno
+# Crear archivo .env con:
+DATABASE_URL=postgresql://user:password@localhost:5432/instrumentkb
+PORT=3002
 
-# Generar cliente Prisma
-npx prisma generate
+# Compilar TypeScript
+npm run build
 
-# Ejecutar migraciones
-npx prisma migrate dev --name init
-
-# Iniciar servidor de desarrollo
+# Iniciar servidor
 npm run dev
 ```
 
-El backend estará disponible en `http://localhost:3001`
+El backend estará en `http://localhost:3002`
 
 #### 3. Frontend
 
@@ -112,102 +104,84 @@ npm install
 npm run dev
 ```
 
-El frontend estará disponible en `http://localhost:3000`
+El frontend estará en `http://localhost:3000`
 
 ## 📖 Uso
 
-### Crear un Nuevo Instrumento
+### Crear un Nuevo Artículo
 
-1. Accede a la aplicación en `http://localhost:3000`
-2. Haz clic en **"Nuevo Instrumento"**
-3. Completa el formulario en las diferentes pestañas:
-   - **Básicos**: Modelo, fabricante, especificaciones eléctricas y físicas
+1. Accede a `http://localhost:3000`
+2. Haz clic en **"Nuevo Artículo"**
+3. Completa el formulario en las pestañas:
+   - **Básicos**: Información general, fabricante, modelo
+   - **Especificaciones Técnicas**: Alimentación, dimensiones, etc.
    - **Variables**: Variables medidas con precisión y rangos
    - **Protocolos**: Configuración de comunicación
    - **I/O**: Salidas analógicas y digitales
    - **Modbus**: Mapa de registros Modbus
+   - **SDI-12**: Comandos SDI-12
+   - **NMEA**: Sentencias NMEA
+   - **Documentos**: Archivos técnicos
+   - **Imágenes**: Fotos del artículo
    - **Tags**: Etiquetas para clasificación
-4. **Vista previa JSON en tiempo real** a la derecha
-5. Haz clic en **"Guardar Instrumento"**
+4. **Vista previa JSON** en tiempo real a la derecha
+5. Haz clic en **"Guardar Artículo"**
 
-### Buscar Instrumentos
+### Buscar Artículos
 
-En la página principal puedes:
-- Buscar por texto (modelo, categoría)
+En la página principal:
+- Buscar por texto (ItemCode, descripción, modelo)
+- Filtrar por tipo de artículo
 - Filtrar por fabricante
-- Filtrar por protocolo
 - Ver resultados con paginación
-
-### Ver Detalles
-
-Haz clic en el icono 👁️ para ver todos los detalles del instrumento organizados en pestañas.
 
 ### Exportar Datos
 
-#### Exportar Todo (JSON o SQL)
-
-En la página principal:
-- **Exportar JSON**: Descarga todos los datos en formato JSON
-- **Exportar SQL**: Descarga instrucciones INSERT de SQL
-
-#### Exportar un Instrumento
-
-En la vista de detalle:
-- **Exportar JSON**: Descarga el instrumento completo con todas sus relaciones
+- **JSON**: Descarga todos los datos estructurados
+- **Excel**: Descarga archivo XLSX con múltiples hojas
+- **SQL**: Descarga instrucciones INSERT para PostgreSQL
 
 ## 🔌 API REST
 
 ### Endpoints Principales
 
-#### Fabricantes
+#### Artículos
 ```
-GET    /api/manufacturers       # Listar todos
-POST   /api/manufacturers       # Crear nuevo
+GET    /api/articles              # Listar todos (paginado)
+GET    /api/articles/:id          # Obtener uno con relaciones
+POST   /api/articles              # Crear (con relaciones anidadas)
+PUT    /api/articles/:id          # Actualizar
+DELETE /api/articles/:id          # Eliminar
+GET    /api/articles/search       # Búsqueda avanzada
+GET    /api/articles/meta/types   # Tipos de artículo
+GET    /api/articles/meta/categories  # Categorías
+GET    /api/articles/meta/families    # Familias
+GET    /api/articles/meta/subfamilies # Subfamilias
 ```
 
-#### Instrumentos
+#### Fabricantes
 ```
-GET    /api/instruments         # Listar todos (paginado)
-GET    /api/instruments/:id     # Obtener uno con relaciones
-POST   /api/instruments         # Crear (con relaciones anidadas)
-PUT    /api/instruments/:id     # Actualizar
-DELETE /api/instruments/:id     # Eliminar
+GET    /api/manufacturers         # Listar todos
+POST   /api/manufacturers         # Crear nuevo
 ```
 
 #### Variables
 ```
-GET    /api/variables           # Listar todas
-POST   /api/variables           # Crear nueva
-POST   /api/variables/instrument-variables  # Vincular a instrumento
-```
-
-#### Búsqueda
-```
-GET    /api/search/instruments  # Búsqueda avanzada
-  Query params:
-    - q: texto libre
-    - manufacturer_id: filtro por fabricante
-    - variable_name: filtro por variable
-    - protocol_type: filtro por protocolo
-    - accuracy_abs_lte: precisión menor o igual a
-    - modbus_address: filtro por dirección Modbus
-    - tags[]: array de etiquetas
-    - page, limit: paginación
+GET    /api/variables             # Listar todas
+POST   /api/variables             # Crear nueva
 ```
 
 #### Upload
 ```
-POST   /api/upload/document     # Subir documento (multipart)
-POST   /api/upload/image        # Subir imagen (multipart)
-DELETE /api/upload/document/:id # Eliminar documento
-DELETE /api/upload/image/:id    # Eliminar imagen
+POST   /api/upload/document       # Subir documento (multipart)
+POST   /api/upload/image          # Subir imagen (multipart)
 ```
 
 #### Exportación
 ```
-GET    /api/export/json         # Exportar todos los datos a JSON
-GET    /api/export/json/:id     # Exportar un instrumento a JSON
-GET    /api/export/sql          # Exportar todos los datos a SQL
+GET    /api/export/json           # Exportar a JSON
+GET    /api/export/excel          # Exportar a Excel
+GET    /api/export/sql            # Exportar a SQL
 ```
 
 ## 🗄️ Esquema de Base de Datos
@@ -215,10 +189,10 @@ GET    /api/export/sql          # Exportar todos los datos a SQL
 ### Tablas Principales
 
 - `manufacturers` - Fabricantes
-- `instruments` - Instrumentos (datos básicos)
+- `articles` - Artículos del catálogo
 - `variables_dict` - Diccionario de variables
-- `instrument_variables` - Variables medidas por instrumento
-- `instrument_protocols` - Protocolos de comunicación
+- `article_variables` - Variables medidas por artículo
+- `article_protocols` - Protocolos de comunicación
 - `analog_outputs` - Salidas analógicas
 - `digital_io` - Entradas/salidas digitales
 - `modbus_registers` - Registros Modbus
@@ -227,76 +201,90 @@ GET    /api/export/sql          # Exportar todos los datos a SQL
 - `documents` - Documentos técnicos
 - `images` - Imágenes
 - `tags` - Etiquetas
-- `provenance` - Trazabilidad de datos
 
-Todas las tablas están relacionadas con foreign keys y ON DELETE CASCADE.
+Todas las tablas están relacionadas con foreign keys y `ON DELETE CASCADE`.
 
-## 📤 Exportación de Datos
+## 📁 Estructura del Proyecto
 
-### Para Transferir a Producción
-
-#### Opción 1: JSON (Recomendado para importación programática)
-
-```bash
-# Desde el navegador o mediante curl:
-curl http://localhost:3001/api/export/json -o instrumentkb-export.json
+```
+InstrumentKB/
+├── backend/
+│   ├── src/
+│   │   ├── routes/               # Rutas de la API
+│   │   │   ├── articles.ts
+│   │   │   ├── manufacturers.ts
+│   │   │   ├── variables.ts
+│   │   │   ├── protocols.ts
+│   │   │   ├── analogOutputs.ts
+│   │   │   ├── digitalIO.ts
+│   │   │   ├── modbusRegisters.ts
+│   │   │   ├── sdi12Commands.ts
+│   │   │   ├── nmeaSentences.ts
+│   │   │   ├── upload.ts
+│   │   │   ├── search.ts
+│   │   │   └── export.ts
+│   │   ├── index.ts              # Servidor Express
+│   │   └── db.ts                 # Cliente PostgreSQL
+│   ├── uploads/
+│   │   ├── documents/
+│   │   └── images/
+│   ├── schema.sql                # Esquema de base de datos
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── ArticleList.tsx   # Listado + búsqueda
+│   │   │   ├── ArticleNew.tsx    # Formulario con JSON viewer
+│   │   │   └── ArticleDetail.tsx # Vista detallada
+│   │   ├── App.tsx               # Componente principal
+│   │   ├── main.tsx              # Punto de entrada
+│   │   ├── api.ts                # Cliente API
+│   │   └── types.ts              # TypeScript types
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   └── Dockerfile
+├── docker-compose.yml            # Orquestación de servicios
+├── nginx.conf                    # Configuración Nginx (producción)
+├── .gitignore
+└── README.md
 ```
 
-Este archivo contiene:
-- Todos los datos estructurados
-- Metadata (fecha de exportación, versión)
-- Fácil de importar mediante script
+## 🌐 Arquitectura Docker con Nginx
 
-#### Opción 2: SQL (Para importación directa a PostgreSQL)
+En el setup con Docker Compose, la aplicación usa **4 contenedores**:
 
-```bash
-# Desde el navegador o mediante curl:
-curl http://localhost:3001/api/export/sql -o instrumentkb-export.sql
+1. **PostgreSQL** (puerto 5434) - Base de datos
+2. **Backend** (puerto 3002) - API REST con Express
+3. **Frontend** (puerto 3000) - Servidor de desarrollo Vite
+4. **Nginx** (puerto 8080) - Proxy reverso
 
-# Importar en producción:
-psql -U usuario -d base_datos_produccion -f instrumentkb-export.sql
+### Flujo de Peticiones en Producción
+
+```
+Usuario → http://localhost:8080 → Nginx
+                                     ├─→ / → Frontend (puerto 3000)
+                                     ├─→ /api → Backend (puerto 3002)
+                                     └─→ /uploads → Backend archivos estáticos
 ```
 
-### Script de Importación JSON (Ejemplo)
-
-```javascript
-// import-data.js
-const fs = require('fs');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
-const data = JSON.parse(fs.readFileSync('instrumentkb-export.json'));
-
-async function importData() {
-  // Importar fabricantes
-  for (const mfg of data.data.manufacturers) {
-    await prisma.manufacturer.create({ data: mfg });
-  }
-  
-  // Importar variables
-  for (const variable of data.data.variables) {
-    await prisma.variableDict.create({ data: variable });
-  }
-  
-  // ... continuar con el resto de tablas
-}
-
-importData();
-```
+**Ventajas de usar Nginx:**
+- Un solo punto de entrada (puerto 8080)
+- Gestión centralizada de CORS
+- Compresión gzip automática
+- Mejor rendimiento para archivos estáticos
+- Fácil configurar SSL/HTTPS
+- Balanceo de carga (si escala)
 
 ## 🛠️ Comandos Útiles
 
 ### Backend
 
 ```bash
-# Generar cliente Prisma tras cambios en schema
-npx prisma generate
-
-# Crear migración
-npx prisma migrate dev --name descripcion_cambio
-
-# Ver base de datos en navegador
-npx prisma studio
+# Desarrollo
+npm run dev
 
 # Build para producción
 npm run build
@@ -332,95 +320,6 @@ docker-compose down
 
 # Reiniciar un servicio
 docker-compose restart backend
-
-# Entrar al contenedor
-docker-compose exec backend sh
-```
-
-## 📁 Estructura del Proyecto
-
-```
-InstrumentKB/
-├── backend/
-│   ├── prisma/
-│   │   └── schema.prisma      # Esquema de base de datos
-│   ├── src/
-│   │   ├── routes/            # Rutas de la API
-│   │   │   ├── manufacturers.ts
-│   │   │   ├── instruments.ts
-│   │   │   ├── variables.ts
-│   │   │   ├── protocols.ts
-│   │   │   ├── analogOutputs.ts
-│   │   │   ├── digitalIO.ts
-│   │   │   ├── modbusRegisters.ts
-│   │   │   ├── sdi12Commands.ts
-│   │   │   ├── nmeaSentences.ts
-│   │   │   ├── upload.ts
-│   │   │   ├── search.ts
-│   │   │   └── export.ts
-│   │   ├── index.ts           # Punto de entrada
-│   │   └── prisma.ts          # Cliente Prisma
-│   ├── uploads/               # Archivos subidos
-│   ├── package.json
-│   └── .env
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── InstrumentList.tsx    # Listado + búsqueda
-│   │   │   ├── InstrumentNew.tsx     # Formulario con JSON viewer
-│   │   │   └── InstrumentDetail.tsx  # Vista detallada
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   ├── api.ts             # Cliente API
-│   │   └── types.ts           # TypeScript types
-│   ├── package.json
-│   └── vite.config.ts
-├── docker-compose.yml
-└── README.md
-```
-
-## 🧪 Ejemplo de Instrumento Completo
-
-```json
-{
-  "manufacturer_id": 1,
-  "model": "CTD-10",
-  "variant": "v2.1",
-  "category": "Sensor CTD",
-  "power_supply_min_v": 9,
-  "power_supply_max_v": 28,
-  "ip_rating": "IP68",
-  "variables": [
-    {
-      "variable_id": 1,
-      "range_min": 0,
-      "range_max": 100,
-      "unit": "m",
-      "accuracy_abs": 0.05,
-      "resolution": 0.001
-    }
-  ],
-  "protocols": [
-    {
-      "type": "ModbusRTU",
-      "baudrate": 9600,
-      "databits": 8,
-      "parity": "N",
-      "stopbits": 1
-    }
-  ],
-  "modbus_registers": [
-    {
-      "function_code": 3,
-      "address": 0,
-      "name": "Temperature",
-      "datatype": "FLOAT32",
-      "unit": "°C",
-      "rw": "R"
-    }
-  ],
-  "tags": ["sensor", "underwater", "temperature"]
-}
 ```
 
 ## 🔧 Troubleshooting
@@ -430,24 +329,17 @@ InstrumentKB/
 Verifica que:
 1. PostgreSQL esté ejecutándose
 2. Las credenciales en `.env` sean correctas
-3. La base de datos `instruments` exista
+3. La base de datos `instrumentkb` exista
 
 ```bash
 # Test de conexión
-psql -U kb_user -d instruments -h localhost
-```
-
-### Error "Prisma Client not generated"
-
-```bash
-cd backend
-npx prisma generate
+psql -U postgres -d instrumentkb
 ```
 
 ### Puerto ya en uso
 
 Cambia los puertos en:
-- `backend/.env` → `PORT=3001`
+- `backend/.env` → `PORT=3002`
 - `frontend/vite.config.ts` → `server.port`
 - `docker-compose.yml` → ports mapping
 
@@ -459,18 +351,19 @@ Verifica permisos en `backend/uploads/`:
 chmod -R 755 backend/uploads
 ```
 
-## 📝 Notas de Desarrollo
+## 📝 Notas Técnicas
 
-- **Validación**: Zod en backend, validación nativa de Mantine en frontend
-- **Relaciones**: Todas usan Prisma relations con cascade delete
-- **Transaccionalidad**: Crear instrumento es transaccional (todo o nada)
-- **Archivos**: SHA256 calculado automáticamente al subir documentos
-- **Búsqueda**: Usa Prisma filters con case-insensitive
-- **JSON viewer**: Se actualiza en tiempo real con cada cambio en el formulario
+- **Base de datos**: SQL puro con `pg` (sin ORM)
+- **Validación**: Validación en backend con PostgreSQL constraints
+- **Relaciones**: Foreign keys con CASCADE DELETE
+- **Transaccionalidad**: Operaciones críticas en transacciones
+- **Archivos**: SHA256 calculado automáticamente
+- **Búsqueda**: Queries optimizados con índices
+- **JSON viewer**: Actualización en tiempo real con cada cambio
 
 ## 🔐 Seguridad
 
-⚠️ **Esta versión NO incluye autenticación**. Es para uso interno en el PC de un junior.
+⚠️ **Esta versión NO incluye autenticación**. Es para uso interno.
 
 Para producción, considera añadir:
 - JWT o sesiones
@@ -478,26 +371,12 @@ Para producción, considera añadir:
 - Validación de archivos (tipo MIME, tamaño)
 - HTTPS
 - CORS restrictivo
-- SQL injection protection (ya incluido con Prisma)
+- SQL injection protection (usar parámetros preparados)
 
 ## 📜 Licencia
 
 Proyecto interno. Todos los derechos reservados.
 
-## 🤝 Contribución
-
-Para añadir nuevos campos o tablas:
-
-1. Editar `backend/prisma/schema.prisma`
-2. Crear migración: `npx prisma migrate dev --name nombre_cambio`
-3. Actualizar tipos en `frontend/src/types.ts`
-4. Actualizar rutas y componentes correspondientes
-
-## 📧 Soporte
-
-Para problemas o preguntas, contacta al equipo de desarrollo.
-
 ---
 
 **Hecho con ❤️ para mejorar la gestión de instrumentación industrial**
-

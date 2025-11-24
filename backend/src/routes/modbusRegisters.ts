@@ -1,33 +1,50 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../prisma';
+import { query } from '../db';
 
 export const modbusRegistersRouter = Router();
+
+// GET modbus registers for article
+modbusRegistersRouter.get('/', async (req: Request, res: Response) => {
+  try {
+    const article_id = req.query.article_id as string;
+    
+    if (article_id) {
+      const result = await query(
+        `SELECT * FROM modbus_registers WHERE article_id = $1 ORDER BY address ASC`,
+        [article_id]
+      );
+      res.json(result.rows);
+    } else {
+      const result = await query(`SELECT * FROM modbus_registers ORDER BY article_id, address ASC`);
+      res.json(result.rows);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching modbus registers' });
+  }
+});
 
 // POST create modbus register
 modbusRegistersRouter.post('/', async (req: Request, res: Response) => {
   try {
-    const modbusRegister = await prisma.modbusRegister.create({
-      data: req.body
-    });
-    res.status(201).json(modbusRegister);
-  } catch (error) {
-    console.error('Error creating modbus register:', error);
-    res.status(500).json({ error: 'Error creating modbus register' });
-  }
-});
-
-// POST bulk create modbus registers
-modbusRegistersRouter.post('/bulk', async (req: Request, res: Response) => {
-  try {
-    const { registers } = req.body;
-    const created = await prisma.modbusRegister.createMany({
-      data: registers,
-      skipDuplicates: true
-    });
-    res.status(201).json({ count: created.count });
-  } catch (error) {
-    console.error('Error bulk creating modbus registers:', error);
-    res.status(500).json({ error: 'Error bulk creating modbus registers' });
+    const { article_id, function_code, address, name, description, datatype, 
+            scale, unit, rw, min, max, default_value, notes, reference_document_id } = req.body;
+    
+    const result = await query(
+      `INSERT INTO modbus_registers (article_id, function_code, address, name, description, 
+       datatype, scale, unit, rw, min, max, default_value, notes, reference_document_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING *`,
+      [article_id, function_code, address, name, description || null, datatype || null,
+       scale || null, unit || null, rw, min || null, max || null, default_value || null,
+       notes || null, reference_document_id || null]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'Duplicate modbus register (article_id, function_code, address)' });
+    } else {
+      res.status(500).json({ error: 'Error creating modbus register' });
+    }
   }
 });
 
@@ -35,12 +52,9 @@ modbusRegistersRouter.post('/bulk', async (req: Request, res: Response) => {
 modbusRegistersRouter.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    await prisma.modbusRegister.delete({
-      where: { modbus_id: id }
-    });
+    await query('DELETE FROM modbus_registers WHERE modbus_id = $1', [id]);
     res.json({ message: 'Modbus register deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error deleting modbus register' });
   }
 });
-
