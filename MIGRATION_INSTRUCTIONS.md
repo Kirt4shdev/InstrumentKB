@@ -30,6 +30,30 @@ Si tienes PostgreSQL instalado directamente en tu servidor:
 
 Si ya conoces el proceso, aquí está la versión corta:
 
+### Linux/Mac/Git Bash:
+```bash
+# 1. Backup (Docker)
+docker exec instrumentkb-db pg_dump -U kb_user -d instruments > "backup_$(date +%Y%m%d_%H%M%S).sql"
+
+# 2. Detener servicios (opcional)
+docker stop instrumentkb-backend instrumentkb-frontend instrumentkb-nginx
+
+# 3. Ejecutar migración
+docker exec -i instrumentkb-db psql -U kb_user -d instruments < backend/migrations/migration_2025_01.sql
+
+# 4. Verificar
+docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "SELECT column_name FROM information_schema.columns WHERE table_name = 'articles' AND column_name LIKE 'heating%';"
+
+# 5. Reiniciar
+docker start instrumentkb-backend instrumentkb-frontend instrumentkb-nginx
+
+# 6. Verificar en navegador (Linux)
+xdg-open "http://localhost:8080"
+# O en Mac
+open "http://localhost:8080"
+```
+
+### Windows PowerShell:
 ```powershell
 # 1. Backup (Docker)
 $date = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -91,18 +115,24 @@ Start-Process "http://localhost:8080"
 **ANTES DE CUALQUIER CAMBIO**, crea un backup completo de tu base de datos:
 
 #### 🐳 Si usas Docker (desarrollo):
+
+**Linux/Mac/Git Bash**:
+```bash
+# Backup completo
+docker exec instrumentkb-db pg_dump -U kb_user -d instruments -F c -b -v > backup_$(date +%Y%m%d_%H%M%S).backup
+
+# O como SQL legible (más simple)
+docker exec instrumentkb-db pg_dump -U kb_user -d instruments > backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+**Windows PowerShell**:
 ```powershell
-# Windows PowerShell
+# Backup completo
 $date = Get-Date -Format "yyyyMMdd_HHmmss"
 docker exec instrumentkb-db pg_dump -U kb_user -d instruments -F c -b -v > "backup_$date.backup"
 
-# Exportar también como SQL legible (opcional)
+# O como SQL legible (más simple)
 docker exec instrumentkb-db pg_dump -U kb_user -d instruments > "backup_$date.sql"
-```
-
-```bash
-# Linux/Mac
-docker exec instrumentkb-db pg_dump -U kb_user -d instruments -F c -b -v > backup_$(date +%Y%m%d_%H%M%S).backup
 ```
 
 #### 🏢 Si usas PostgreSQL instalado directamente (producción):
@@ -137,13 +167,9 @@ pg_restore -h localhost -U tu_usuario_produccion -d tu_bd_produccion -v -c backu
 Para evitar que se escriban datos durante la migración:
 
 #### 🐳 Docker (desarrollo):
-```powershell
-# Windows PowerShell - Detener solo backend y frontend, dejar DB corriendo
-docker stop instrumentkb-backend instrumentkb-frontend instrumentkb-nginx
-```
-
 ```bash
-# Linux/Mac
+# Detener solo backend y frontend, dejar DB corriendo
+# Funciona en Linux/Mac/Windows
 docker stop instrumentkb-backend instrumentkb-frontend instrumentkb-nginx
 ```
 
@@ -164,16 +190,22 @@ sudo systemctl stop instrumentkb-frontend
 ### Paso 3: Ejecutar la Migración SQL
 
 #### 🐳 Docker (desarrollo):
+
+**Linux/Mac/Git Bash** (Más común):
+```bash
+# Desde la raíz del proyecto
+docker exec -i instrumentkb-db psql -U kb_user -d instruments < backend/migrations/migration_2025_01.sql
+```
+
+**Windows PowerShell**:
 ```powershell
-# Windows PowerShell - Desde la raíz del proyecto
+# Desde la raíz del proyecto
 Get-Content backend\migrations\migration_2025_01.sql | docker exec -i instrumentkb-db psql -U kb_user -d instruments
 ```
 
+**Alternativa (funciona en todos los sistemas)**:
 ```bash
-# Linux/Mac - Desde la raíz del proyecto
-docker exec -i instrumentkb-db psql -U kb_user -d instruments < backend/migrations/migration_2025_01.sql
-
-# O también puedes copiar el archivo y ejecutarlo dentro del contenedor
+# Copiar el archivo al contenedor y ejecutarlo
 docker cp backend/migrations/migration_2025_01.sql instrumentkb-db:/tmp/
 docker exec instrumentkb-db psql -U kb_user -d instruments -f /tmp/migration_2025_01.sql
 ```
@@ -206,31 +238,20 @@ psql -h localhost -U tu_usuario_produccion -d tu_bd_produccion -f migration_2025
 Conéctate a tu base de datos y verifica:
 
 #### 🐳 Docker (desarrollo):
-```powershell
-# Windows PowerShell - Ejecutar verificación
-docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'articles' 
-AND column_name LIKE 'heating%';
-"
+
+**Opción 1: Verificaciones individuales** (funciona en todos los sistemas):
+```bash
+# Verificar campos de calefacción
+docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'articles' AND column_name LIKE 'heating%';"
 
 # Verificar analog_outputs.type
-docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "
-SELECT column_name, data_type, character_maximum_length
-FROM information_schema.columns 
-WHERE table_name = 'analog_outputs' 
-AND column_name = 'type';
-"
+docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = 'analog_outputs' AND column_name = 'type';"
 
 # Verificar tabla accessories
-docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "
-SELECT table_name FROM information_schema.tables WHERE table_name = 'accessories';
-"
+docker exec -it instrumentkb-db psql -U kb_user -d instruments -c "SELECT table_name FROM information_schema.tables WHERE table_name = 'accessories';"
 ```
 
-```bash
-# Linux/Mac - Ejecutar todas las verificaciones a la vez
+**Opción 2: Todas las verificaciones a la vez** (Linux/Mac/Git Bash):
 docker exec -it instrumentkb-db psql -U kb_user -d instruments << 'EOF'
 -- Verificar nuevos campos de calefacción
 SELECT column_name, data_type 
@@ -290,8 +311,8 @@ npm run build
 ### Paso 6: Reiniciar la Aplicación
 
 #### 🐳 Docker (desarrollo):
-```powershell
-# Windows PowerShell - Reiniciar los servicios
+```bash
+# Reiniciar los servicios (funciona en todos los sistemas)
 docker start instrumentkb-backend instrumentkb-frontend instrumentkb-nginx
 
 # O reiniciar todo con docker-compose
@@ -299,17 +320,6 @@ docker-compose restart
 
 # Verificar que todo está funcionando
 docker ps
-docker logs instrumentkb-backend --tail 20
-```
-
-```bash
-# Linux/Mac
-docker start instrumentkb-backend instrumentkb-frontend instrumentkb-nginx
-
-# O reiniciar todo
-docker-compose restart
-
-# Verificar logs
 docker logs instrumentkb-backend --tail 20
 ```
 
@@ -369,20 +379,23 @@ Si necesitas revertir los cambios:
 ### Opción 1: Restaurar desde Backup (RECOMENDADO)
 
 #### 🐳 Docker:
-```powershell
-# Windows PowerShell
-Get-Content backup_XXXXXXXXXX.backup | docker exec -i instrumentkb-db pg_restore -U kb_user -d instruments -v -c
 
-# O desde SQL
-Get-Content backup_XXXXXXXXXX.sql | docker exec -i instrumentkb-db psql -U kb_user -d instruments
-```
-
+**Linux/Mac/Git Bash**:
 ```bash
-# Linux/Mac
+# Desde backup binario
 docker exec -i instrumentkb-db pg_restore -U kb_user -d instruments -v -c < backup_XXXXXXXXXX.backup
 
-# O desde SQL
+# O desde SQL (más simple)
 docker exec -i instrumentkb-db psql -U kb_user -d instruments < backup_XXXXXXXXXX.sql
+```
+
+**Windows PowerShell**:
+```powershell
+# Desde backup binario
+Get-Content backup_XXXXXXXXXX.backup | docker exec -i instrumentkb-db pg_restore -U kb_user -d instruments -v -c
+
+# O desde SQL (más simple)
+Get-Content backup_XXXXXXXXXX.sql | docker exec -i instrumentkb-db psql -U kb_user -d instruments
 ```
 
 #### 🏢 Producción:
@@ -396,8 +409,8 @@ psql -h localhost -U tu_usuario_produccion -d tu_bd_produccion < backup_XXXXXXXX
 
 ⚠️ **Solo si NO has creado datos nuevos con las nuevas funcionalidades**:
 
-#### 🐳 Docker:
-```powershell
+#### 🐳 Docker (funciona en todos los sistemas):
+```bash
 docker exec -i instrumentkb-db psql -U kb_user -d instruments -c "
 BEGIN;
 ALTER TABLE articles DROP COLUMN IF EXISTS has_heating CASCADE;
