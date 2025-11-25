@@ -16,20 +16,46 @@ import {
   Box,
   Tooltip,
   ActionIcon,
+  Image,
+  Anchor,
+  Modal,
+  AspectRatio,
+  UnstyledButton,
 } from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
+import '@mantine/carousel/styles.css';
 import { 
   IconArrowLeft, 
   IconEdit,
   IconSparkles,
+  IconFileText,
+  IconDownload,
+  IconExternalLink,
+  IconChevronLeft,
+  IconChevronRight,
 } from '@tabler/icons-react';
 import { getArticle } from '../api';
 import { Article, ArticleVariable, ArticleProtocol, Tag } from '../types';
+
+// Obtener la URL base del servidor desde las variables de entorno
+// o usar una ruta relativa que funcione a través del proxy
+const getBaseUrl = () => {
+  // En producción o cuando se accede desde el servidor, usar la URL actual del navegador
+  const apiUrl = (import.meta as any).env?.VITE_API_URL;
+  if (apiUrl) {
+    return apiUrl.replace('/api', '');
+  }
+  // En desarrollo o cuando no hay variable de entorno, usar ruta relativa que irá a través del proxy
+  return '';
+};
 
 function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -155,6 +181,12 @@ function ArticleDetail() {
         </Group>
 
         <Divider className="corporate-divider" />
+
+        {/* Grid principal: Contenido + Imágenes */}
+        <Grid>
+          {/* Columna principal de contenido */}
+          <Grid.Col span={article.images && article.images.length > 0 ? 8 : 12}>
+            <Stack gap="sm">
 
         {/* Información SAP */}
         <Paper p="sm" className="corporate-card">
@@ -740,31 +772,84 @@ function ArticleDetail() {
         {/* Documentos */}
         {article.documents && article.documents.length > 0 && (
           <Paper p="sm" className="corporate-card">
-            <Title order={4} size="sm" mb="xs" style={{ fontWeight: 600 }}>
-              Documentos
-            </Title>
+            <Group justify="space-between" mb="xs">
+              <Title order={4} size="sm" style={{ fontWeight: 600 }}>
+                📄 Documentos
+              </Title>
+              <Badge variant="light" size="xs" color="blue">
+                {article.documents.length} archivo{article.documents.length > 1 ? 's' : ''}
+              </Badge>
+            </Group>
             <Divider mb="xs" />
             <Stack gap="xs">
-              {article.documents.map((doc: any) => (
-                <Box key={doc.document_id}>
-                  <Group gap="xs">
-                    <Badge variant="light" size="xs" color="blue">
-                      {doc.type}
-                    </Badge>
-                    <Text size="xs" fw={500}>{doc.title}</Text>
-                    {doc.language && (
-                      <Badge variant="outline" size="xs">
-                        {doc.language}
-                      </Badge>
-                    )}
-                    {doc.revision && (
-                      <Badge variant="dot" size="xs">
-                        v{doc.revision}
-                      </Badge>
-                    )}
-                  </Group>
-                </Box>
-              ))}
+              {article.documents.map((doc: any) => {
+                const fileUrl = doc.url_or_path?.startsWith('http') 
+                  ? doc.url_or_path 
+                  : `${getBaseUrl()}/uploads/${doc.url_or_path}`;
+                const isExternal = doc.url_or_path?.startsWith('http');
+                
+                return (
+                  <Paper 
+                    key={doc.document_id} 
+                    p="xs" 
+                    withBorder 
+                    style={{ 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.04)',
+                        borderColor: 'rgba(33, 150, 243, 0.3)'
+                      }
+                    }}
+                  >
+                    <Anchor
+                      href={isExternal ? doc.url_or_path : fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                      <Group justify="space-between" wrap="nowrap">
+                        <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                          <IconFileText size={16} style={{ flexShrink: 0, color: 'var(--mantine-color-blue-6)' }} />
+                          <Box style={{ flex: 1, minWidth: 0 }}>
+                            <Group gap="xs" wrap="wrap">
+                              <Badge variant="light" size="xs" color="blue">
+                                {doc.type}
+                              </Badge>
+                              <Text size="xs" fw={500} truncate>
+                                {doc.title}
+                              </Text>
+                              {doc.language && (
+                                <Badge variant="outline" size="xs">
+                                  {doc.language}
+                                </Badge>
+                              )}
+                              {doc.revision && (
+                                <Badge variant="dot" size="xs">
+                                  v{doc.revision}
+                                </Badge>
+                              )}
+                            </Group>
+                            {doc.notes && (
+                              <Text size="10px" c="dimmed" mt={2} lineClamp={1}>
+                                {doc.notes}
+                              </Text>
+                            )}
+                          </Box>
+                        </Group>
+                        <ActionIcon 
+                          variant="subtle" 
+                          color="blue" 
+                          size="sm"
+                          style={{ flexShrink: 0 }}
+                        >
+                          {isExternal ? <IconExternalLink size={14} /> : <IconDownload size={14} />}
+                        </ActionIcon>
+                      </Group>
+                    </Anchor>
+                  </Paper>
+                );
+              })}
             </Stack>
           </Paper>
         )}
@@ -900,7 +985,245 @@ function ArticleDetail() {
             </Text>
           </Paper>
         )}
+            </Stack>
+          </Grid.Col>
+
+          {/* Columna de Imágenes (lado derecho) */}
+          {article.images && article.images.length > 0 && (
+            <Grid.Col span={4}>
+              <Paper p="sm" className="corporate-card" style={{ position: 'sticky', top: 16 }}>
+                <Group justify="space-between" mb="xs">
+                  <Title order={4} size="sm" style={{ fontWeight: 600 }}>
+                    🖼️ Galería
+                  </Title>
+                  <Badge variant="light" size="xs" color="violet">
+                    {article.images.length}
+                  </Badge>
+                </Group>
+                <Divider mb="sm" />
+                
+                {/* Carrusel Principal */}
+                <Box mb="md">
+                  <Carousel
+                    withIndicators={false}
+                    withControls={article.images.length > 1}
+                    slideSize="100%"
+                    slideGap={0}
+                    align="center"
+                    onSlideChange={setSelectedImageIndex}
+                    controlsOffset="xs"
+                    controlSize={32}
+                    previousControlIcon={<IconChevronLeft size={20} />}
+                    nextControlIcon={<IconChevronRight size={20} />}
+                    styles={{
+                      control: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        border: '1px solid #e9ecef',
+                        color: '#228be6',
+                        '&:hover': {
+                          backgroundColor: '#228be6',
+                          color: 'white',
+                        },
+                      },
+                    }}
+                  >
+                    {article.images.map((img: any, index: number) => {
+                      const imageUrl = img.url_or_path?.startsWith('http') 
+                        ? img.url_or_path 
+                        : `${getBaseUrl()}/uploads/${img.url_or_path}`;
+                      
+                      return (
+                        <Carousel.Slide key={img.image_id || index}>
+                          <Box
+                            style={{ 
+                              cursor: 'pointer',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                            }}
+                            onClick={() => {
+                              setSelectedImageIndex(index);
+                              setImageModalOpen(true);
+                            }}
+                          >
+                            <AspectRatio ratio={16/9}>
+                              <Image
+                                src={imageUrl}
+                                alt={img.caption || `Imagen ${index + 1}`}
+                                fit="cover"
+                                fallbackSrc="https://placehold.co/800x450?text=Imagen+No+Disponible"
+                                style={{ 
+                                  width: '100%',
+                                  height: '100%',
+                                }}
+                              />
+                            </AspectRatio>
+                            {(img.caption || img.credit) && (
+                              <Box p="sm" bg="gray.0" style={{ borderTop: '1px solid #e9ecef' }}>
+                                {img.caption && (
+                                  <Text size="sm" fw={500} lineClamp={2} mb={img.credit ? 4 : 0}>
+                                    {img.caption}
+                                  </Text>
+                                )}
+                                {img.credit && (
+                                  <Text size="xs" c="dimmed">
+                                    📷 {img.credit}
+                                  </Text>
+                                )}
+                              </Box>
+                            )}
+                          </Box>
+                        </Carousel.Slide>
+                      );
+                    })}
+                  </Carousel>
+                </Box>
+                
+                {/* Miniaturas Navegables */}
+                {article.images.length > 1 && (
+                  <Box>
+                    <Text size="xs" c="dimmed" mb="xs" ta="center">
+                      Miniaturas
+                    </Text>
+                    <Group gap="xs" justify="center">
+                      {article.images.map((img: any, index: number) => {
+                        const imageUrl = img.url_or_path?.startsWith('http') 
+                          ? img.url_or_path 
+                          : `${getBaseUrl()}/uploads/${img.url_or_path}`;
+                        
+                        return (
+                          <UnstyledButton
+                            key={img.image_id || index}
+                            onClick={() => setSelectedImageIndex(index)}
+                            style={{
+                              border: selectedImageIndex === index ? '3px solid #228be6' : '2px solid #e9ecef',
+                              borderRadius: '6px',
+                              overflow: 'hidden',
+                              opacity: selectedImageIndex === index ? 1 : 0.6,
+                              transition: 'all 0.2s ease',
+                              width: '60px',
+                              height: '60px',
+                            }}
+                          >
+                            <Image
+                              src={imageUrl}
+                              alt={`Miniatura ${index + 1}`}
+                              fit="cover"
+                              width={60}
+                              height={60}
+                            />
+                          </UnstyledButton>
+                        );
+                      })}
+                    </Group>
+                  </Box>
+                )}
+              </Paper>
+            </Grid.Col>
+          )}
+        </Grid>
       </Stack>
+      
+      {/* Modal para ver imagen en grande con carrusel */}
+      <Modal
+        opened={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        size="xl"
+        padding={0}
+        withCloseButton={true}
+        centered
+        overlayProps={{
+          backgroundOpacity: 0.85,
+          blur: 3,
+        }}
+      >
+        {article && article.images && (
+          <Box>
+            <Carousel
+              withIndicators
+              withControls={article.images.length > 1}
+              slideSize="100%"
+              slideGap={0}
+              align="center"
+              initialSlide={selectedImageIndex}
+              controlsOffset="md"
+              controlSize={40}
+              previousControlIcon={<IconChevronLeft size={24} />}
+              nextControlIcon={<IconChevronRight size={24} />}
+              styles={{
+                control: {
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  border: 'none',
+                  color: '#228be6',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  '&:hover': {
+                    backgroundColor: '#228be6',
+                    color: 'white',
+                  },
+                },
+                indicator: {
+                  width: '12px',
+                  height: '12px',
+                  backgroundColor: 'white',
+                  '&[data-active]': {
+                    backgroundColor: '#228be6',
+                  },
+                },
+              }}
+            >
+              {article.images.map((img: any, index: number) => {
+                const imageUrl = img.url_or_path?.startsWith('http') 
+                  ? img.url_or_path 
+                  : `${getBaseUrl()}/uploads/${img.url_or_path}`;
+                
+                return (
+                  <Carousel.Slide key={img.image_id || index}>
+                    <Box style={{ position: 'relative' }}>
+                      <Image
+                        src={imageUrl}
+                        alt={img.caption || `Imagen ${index + 1}`}
+                        fit="contain"
+                        style={{ 
+                          maxHeight: '80vh',
+                          width: '100%',
+                        }}
+                      />
+                      <Box 
+                        p="md" 
+                        style={{ 
+                          position: 'absolute', 
+                          bottom: 0, 
+                          left: 0, 
+                          right: 0,
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                        }}
+                      >
+                        <Stack gap="xs">
+                          {img.caption && (
+                            <Text size="sm" fw={500} style={{ color: 'white' }}>
+                              {img.caption}
+                            </Text>
+                          )}
+                          <Anchor
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'white' }}
+                          >
+                            <Group gap={8}>
+                              <IconExternalLink size={16} />
+                              <Text size="sm" fw={500}>Abrir en nueva pestaña</Text>
+                            </Group>
+                          </Anchor>
+                        </Stack>
+                      </Box>
+                    </Box>
+                  </Carousel.Slide>
+                );
+              })}
+            </Carousel>
+          </Box>
+        )}
+      </Modal>
     </Container>
   );
 }

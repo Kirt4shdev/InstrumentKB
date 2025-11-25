@@ -158,6 +158,7 @@ exportRouter.get('/excel', async (req: Request, res: Response) => {
       sdi12Commands,
       nmeaSentences,
       tags,
+      accessories,
       provenance
     ] = await Promise.all([
       query('SELECT * FROM articles'),
@@ -173,6 +174,7 @@ exportRouter.get('/excel', async (req: Request, res: Response) => {
       query('SELECT * FROM sdi12_commands'),
       query('SELECT * FROM nmea_sentences'),
       query('SELECT * FROM tags'),
+      query('SELECT * FROM accessories'),
       query('SELECT * FROM provenance')
     ]);
 
@@ -316,6 +318,7 @@ exportRouter.get('/sql', async (req: Request, res: Response) => {
       sdi12Commands,
       nmeaSentences,
       tags,
+      accessories,
       provenance
     ] = await Promise.all([
       query('SELECT * FROM articles'),
@@ -331,6 +334,7 @@ exportRouter.get('/sql', async (req: Request, res: Response) => {
       query('SELECT * FROM sdi12_commands'),
       query('SELECT * FROM nmea_sentences'),
       query('SELECT * FROM tags'),
+      query('SELECT * FROM accessories'),
       query('SELECT * FROM provenance')
     ]);
 

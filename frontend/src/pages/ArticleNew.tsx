@@ -21,9 +21,14 @@ import {
   Tooltip,
   Box,
   Divider,
+  FileInput,
+  Badge,
+  Loader,
+  Alert,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconTrash, IconPlus, IconInfoCircle, IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { IconTrash, IconPlus, IconInfoCircle, IconArrowLeft, IconDeviceFloppy, IconUpload, IconFolder, IconFile, IconCheck, IconAlertCircle, IconPhoto } from '@tabler/icons-react';
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite';
 import 'react-json-view-lite/dist/index.css';
 import { 
@@ -35,6 +40,8 @@ import {
   updateArticle,
   createManufacturer,
   createVariable,
+  uploadDocument,
+  uploadImage,
 } from '../api';
 import { ArticleTypeOption } from '../types';
 
@@ -224,8 +231,43 @@ function ArticleNew() {
       if (article.modbus_registers) setModbusRegisters(article.modbus_registers);
       if (article.sdi12_commands) setSdi12Commands(article.sdi12_commands);
       if (article.nmea_sentences) setNmeaSentences(article.nmea_sentences);
-      if (article.documents) setDocuments(article.documents);
-      if (article.images) setImages(article.images);
+      
+      // Transformar documentos para que funcionen con el nuevo formulario
+      if (article.documents) {
+        const transformedDocs = article.documents.map((doc: any) => {
+          // Extraer la carpeta de la ruta completa
+          const pathParts = doc.url_or_path?.split('/') || [];
+          pathParts.pop(); // Quitar el nombre del archivo
+          const folderPath = pathParts.join('\\') || 'Documents';
+          
+          return {
+            ...doc,
+            folder_path: folderPath,
+            file: null,
+            uploaded: true, // Ya está subido porque existe en la BD
+          };
+        });
+        setDocuments(transformedDocs);
+      }
+      
+      // Transformar imágenes para que funcionen con el nuevo formulario
+      if (article.images) {
+        const transformedImages = article.images.map((img: any) => {
+          // Extraer la carpeta de la ruta completa
+          const pathParts = img.url_or_path?.split('/') || [];
+          pathParts.pop(); // Quitar el nombre del archivo
+          const folderPath = pathParts.join('\\') || 'Images';
+          
+          return {
+            ...img,
+            folder_path: folderPath,
+            file: null,
+            uploaded: true, // Ya está subida porque existe en la BD
+          };
+        });
+        setImages(transformedImages);
+      }
+      
       if (article.tags) setTags(article.tags.map((t: any) => t.tag));
       if (article.accessories) setAccessories(article.accessories);
       
@@ -405,10 +447,32 @@ function ArticleNew() {
         data.nmea_sentences = nmeaSentences.filter(n => n.sentence);
       }
       if (documents.length > 0) {
-        data.documents = documents.filter(d => d.title && d.url_or_path);
+        // Limpiar documentos: solo enviar campos que espera el backend
+        data.documents = documents
+          .filter(d => d.title && d.url_or_path)
+          .map(d => ({
+            document_id: d.document_id, // Mantener ID si existe (para actualización)
+            type: d.type || null,
+            title: d.title,
+            language: d.language || null,
+            revision: d.revision || null,
+            publish_date: d.publish_date || null,
+            url_or_path: d.url_or_path,
+            notes: d.notes || null
+          }));
       }
       if (images.length > 0) {
-        data.images = images.filter(i => i.url_or_path);
+        // Limpiar imágenes: solo enviar campos que espera el backend
+        data.images = images
+          .filter(i => i.url_or_path)
+          .map(i => ({
+            image_id: i.image_id, // Mantener ID si existe (para actualización)
+            caption: i.caption || null,
+            url_or_path: i.url_or_path,
+            credit: i.credit || null,
+            license: i.license || null,
+            notes: i.notes || null
+          }));
       }
       if (tags.length > 0) {
         data.tags = tags;
@@ -541,19 +605,184 @@ function ArticleNew() {
     }]);
   };
 
+  const [uploadingDocs, setUploadingDocs] = useState<{ [key: number]: boolean }>({});
+  const [uploadingImages, setUploadingImages] = useState<{ [key: number]: boolean }>({});
+
+  // Función para generar la ruta automática de documentos
+  const getDocumentFolderPath = (docType: string) => {
+    const manufacturer = manufacturerValue || 'Sin Fabricante';
+    // Mapear tipos de documentos a subcarpetas
+    const typeMapping: { [key: string]: string } = {
+      'manual': 'Manuals',
+      'datasheet': 'Datasheets',
+      'certificate': 'Certificates',
+      'drawing': 'Drawings',
+      'firmware': 'Firmware',
+      'catalog': 'Catalogs',
+      'specification': 'Specifications',
+      'other': 'Other'
+    };
+    const subFolder = typeMapping[docType.toLowerCase()] || 'Other';
+    return `Documentacion_IA\\Documents\\${subFolder}\\${manufacturer}`;
+  };
+
+  // Función para generar la ruta automática de imágenes
+  const getImageFolderPath = () => {
+    const manufacturer = manufacturerValue || 'Sin Fabricante';
+    return `Documentacion_IA\\Images\\${manufacturer}`;
+  };
+
   const addDocument = () => {
     setDocuments([...documents, {
       type: '',
       title: '',
       language: '',
-      url_or_path: ''
+      url_or_path: '',
+      folder_path: '', // Se generará automáticamente
+      file: null
     }]);
+  };
+
+  // Manejar cambio de archivo
+  const handleFileChange = (index: number, file: File | null) => {
+    const newDocs = [...documents];
+    newDocs[index].file = file;
+    setDocuments(newDocs);
+  };
+
+  // Upload de documento inmediato
+  const handleUploadDocument = async (index: number) => {
+    const doc = documents[index];
+    if (!doc.file) return;
+
+    // Validar que tenga tipo de documento
+    if (!doc.type) {
+      notifications.show({
+        title: 'Tipo requerido',
+        message: 'Por favor selecciona el tipo de documento antes de subir',
+        color: 'orange',
+        icon: <IconAlertCircle size={16} />
+      });
+      return;
+    }
+
+    // Validar que haya fabricante
+    if (!manufacturerValue) {
+      notifications.show({
+        title: 'Fabricante requerido',
+        message: 'Por favor selecciona el fabricante antes de subir documentos',
+        color: 'orange',
+        icon: <IconAlertCircle size={16} />
+      });
+      return;
+    }
+
+    setUploadingDocs(prev => ({ ...prev, [index]: true }));
+
+    try {
+      // Generar la ruta automáticamente según el tipo y fabricante
+      const autoFolderPath = getDocumentFolderPath(doc.type);
+      
+      const formData = new FormData();
+      formData.append('file', doc.file);
+      formData.append('folder_path', autoFolderPath);
+      
+      const response = await uploadDocument(formData);
+      
+      // Actualizar el documento con la ruta guardada
+      const newDocs = [...documents];
+      newDocs[index].url_or_path = response.data.url_or_path;
+      newDocs[index].folder_path = autoFolderPath;
+      newDocs[index].uploaded = true;
+      setDocuments(newDocs);
+      
+      notifications.show({
+        title: 'Documento subido',
+        message: `Archivo guardado en: ${response.data.folder_structure}`,
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error al subir',
+        message: error.response?.data?.error || 'Error desconocido',
+        color: 'red',
+        icon: <IconAlertCircle size={16} />
+      });
+    } finally {
+      setUploadingDocs(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
+  // Manejar cambio de archivo de imagen
+  const handleImageFileChange = (index: number, file: File | null) => {
+    const newImages = [...images];
+    newImages[index].file = file;
+    setImages(newImages);
+  };
+
+  // Upload de imagen inmediato
+  const handleUploadImage = async (index: number) => {
+    const img = images[index];
+    if (!img.file) return;
+
+    // Validar que haya fabricante
+    if (!manufacturerValue) {
+      notifications.show({
+        title: 'Fabricante requerido',
+        message: 'Por favor selecciona el fabricante antes de subir imágenes',
+        color: 'orange',
+        icon: <IconAlertCircle size={16} />
+      });
+      return;
+    }
+
+    setUploadingImages(prev => ({ ...prev, [index]: true }));
+
+    try {
+      // Generar la ruta automáticamente según el fabricante
+      const autoFolderPath = getImageFolderPath();
+      
+      const formData = new FormData();
+      formData.append('file', img.file);
+      formData.append('folder_path', autoFolderPath);
+      
+      const response = await uploadImage(formData);
+      
+      // Actualizar la imagen con la ruta guardada
+      const newImages = [...images];
+      newImages[index].url_or_path = response.data.url_or_path;
+      newImages[index].folder_path = autoFolderPath;
+      newImages[index].uploaded = true;
+      setImages(newImages);
+      
+      notifications.show({
+        title: 'Imagen subida',
+        message: `Archivo guardado en: ${response.data.folder_structure}`,
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error al subir imagen',
+        message: error.response?.data?.error || 'Error desconocido',
+        color: 'red',
+        icon: <IconAlertCircle size={16} />
+      });
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [index]: false }));
+    }
   };
 
   const addImage = () => {
     setImages([...images, {
       caption: '',
-      url_or_path: ''
+      url_or_path: '',
+      folder_path: '', // Se generará automáticamente
+      file: null,
+      credit: '',
+      license: '',
+      notes: ''
     }]);
   };
 
@@ -2011,60 +2240,116 @@ function ArticleNew() {
                       ) : (
                         <Stack gap="sm">
                           {documents.map((doc, i) => (
-                            <Paper key={i} p="sm" withBorder>
+                            <Paper key={i} p="md" withBorder style={{ position: 'relative' }}>
+                              {doc.uploaded && (
+                                <Badge 
+                                  color="green" 
+                                  variant="filled" 
+                                  style={{ position: 'absolute', top: 10, right: 50 }}
+                                  leftSection={<IconCheck size={12} />}
+                                >
+                                  Subido
+                                </Badge>
+                              )}
                               <Grid>
                                 <Grid.Col span={11}>
                                   <Grid>
-                                    <Grid.Col span={3}>
-                                      <TextInput
-                                        label={
-                                          <LabelWithTooltip
-                                            label="Tipo"
-                                            tooltip="Tipo de documento. Ejemplo: datasheet, manual, certificate, drawing, other"
-                                          />
-                                        }
-                                        placeholder="datasheet, manual..."
+                                    <Grid.Col span={4}>
+                                      <Select
+                                        label={<LabelWithTooltip label="Tipo" tooltip="Tipo de documento" />}
+                                        placeholder="Seleccionar tipo"
                                         value={doc.type}
-                                        onChange={(e) => updateItem(documents, setDocuments, i, 'type', e.target.value)}
+                                        onChange={(value) => updateItem(documents, setDocuments, i, 'type', value)}
+                                        data={[
+                                          { value: 'datasheet', label: 'Datasheet' },
+                                          { value: 'manual', label: 'Manual' },
+                                          { value: 'quickstart', label: 'Quick Start' },
+                                          { value: 'appnote', label: 'Application Note' },
+                                          { value: 'firmware', label: 'Firmware' },
+                                          { value: 'catalog', label: 'Catálogo' },
+                                          { value: 'certificate', label: 'Certificado' },
+                                          { value: 'drawing', label: 'Dibujo Técnico' },
+                                          { value: 'specification', label: 'Especificación' },
+                                          { value: 'other', label: 'Otro' },
+                                        ]}
                                       />
                                     </Grid.Col>
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={5}>
                                       <TextInput
-                                        label={
-                                          <LabelWithTooltip
-                                            label="Título"
-                                            tooltip="Título descriptivo del documento. Ejemplo: 'Datasheet PT100 v2.3', 'Manual instalación ES'. Debe ser claro para facilitar la búsqueda."
-                                          />
-                                        }
+                                        label={<LabelWithTooltip label="Título" tooltip="Título descriptivo del documento" />}
+                                        placeholder="Manual de usuario v2.3"
                                         value={doc.title}
                                         onChange={(e) => updateItem(documents, setDocuments, i, 'title', e.target.value)}
                                       />
                                     </Grid.Col>
                                     <Grid.Col span={3}>
                                       <TextInput
-                                        label={
-                                          <LabelWithTooltip
-                                            label="Idioma"
-                                            tooltip="Código de idioma del documento (ISO 639-1). Ejemplo: 'ES' (español), 'EN' (inglés), 'DE' (alemán). Facilita filtrar documentos por idioma."
-                                          />
-                                        }
+                                        label={<LabelWithTooltip label="Idioma" tooltip="Código ISO (ES, EN, DE...)" />}
                                         placeholder="ES"
                                         value={doc.language}
-                                        onChange={(e) => updateItem(documents, setDocuments, i, 'language', e.target.value)}
+                                        onChange={(e) => updateItem(documents, setDocuments, i, 'language', e.target.value.toUpperCase())}
                                       />
                                     </Grid.Col>
+                                    
                                     <Grid.Col span={12}>
-                                      <TextInput
+                                      <Divider my="xs" label="Ubicación y Archivo" labelPosition="center" />
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <Alert variant="light" color="blue" icon={<IconFolder size={16} />}>
+                                        <Text size="xs" fw={500} mb={4}>
+                                          Ruta automática:
+                                        </Text>
+                                        <Text size="xs" style={{ fontFamily: 'monospace' }}>
+                                          Documentacion_IA\Documents\{doc.type ? 
+                                            ({
+                                              'manual': 'Manuals',
+                                              'datasheet': 'Datasheets',
+                                              'certificate': 'Certificates',
+                                              'drawing': 'Drawings',
+                                              'firmware': 'Firmware',
+                                              'catalog': 'Catalogs',
+                                              'specification': 'Specifications',
+                                              'other': 'Other'
+                                            }[doc.type] || 'Other') 
+                                            : '[Tipo]'}\{manufacturerValue || '[Fabricante]'}
+                                        </Text>
+                                      </Alert>
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <FileInput
                                         label={
-                                          <LabelWithTooltip
-                                            label="URL / Ruta"
-                                            tooltip="URL externa (https://...) o ruta local (/uploads/...) del documento. Debe ser accesible para todos los usuarios autorizados. Verificar que el link no expire."
-                                          />
+                                          <Group gap={4}>
+                                            <IconFile size={14} />
+                                            <Text size="sm" fw={500}>Archivo</Text>
+                                          </Group>
                                         }
-                                        placeholder="https://... o /uploads/..."
-                                        value={doc.url_or_path}
-                                        onChange={(e) => updateItem(documents, setDocuments, i, 'url_or_path', e.target.value)}
+                                        placeholder="Elegir archivo..."
+                                        accept=".pdf,.doc,.docx,.xlsx,.zip"
+                                        value={doc.file}
+                                        onChange={(file) => handleFileChange(i, file)}
+                                        clearable
                                       />
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <Group justify="space-between">
+                                        <Button
+                                          size="xs"
+                                          variant="light"
+                                          leftSection={uploadingDocs[i] ? <Loader size={14} /> : <IconUpload size={14} />}
+                                          onClick={() => handleUploadDocument(i)}
+                                          disabled={!doc.file || uploadingDocs[i] || doc.uploaded || !doc.type || !manufacturerValue}
+                                        >
+                                          {uploadingDocs[i] ? 'Subiendo...' : doc.uploaded ? 'Archivo Subido' : 'Subir Archivo Ahora'}
+                                        </Button>
+                                        {doc.url_or_path && (
+                                          <Badge color="green" variant="dot">
+                                            Guardado en: {doc.url_or_path}
+                                          </Badge>
+                                        )}
+                                      </Group>
                                     </Grid.Col>
                                   </Grid>
                                 </Grid.Col>
@@ -2099,33 +2384,103 @@ function ArticleNew() {
                       ) : (
                         <Stack gap="sm">
                           {images.map((img, i) => (
-                            <Paper key={i} p="sm" withBorder>
+                            <Paper key={i} p="md" withBorder style={{ position: 'relative' }}>
+                              {img.uploaded && (
+                                <Badge 
+                                  color="green" 
+                                  variant="filled" 
+                                  style={{ position: 'absolute', top: 10, right: 50 }}
+                                  leftSection={<IconCheck size={12} />}
+                                >
+                                  Subida
+                                </Badge>
+                              )}
                               <Grid>
                                 <Grid.Col span={11}>
                                   <Grid>
-                                    <Grid.Col span={4}>
+                                    <Grid.Col span={6}>
                                       <TextInput
-                                        label={
-                                          <LabelWithTooltip
-                                            label="Descripción"
-                                            tooltip="Descripción breve de la imagen. Ejemplo: 'Vista frontal', 'Dimensiones', 'Conexiones eléctricas'. Ayuda a identificar rápidamente el contenido."
-                                          />
-                                        }
+                                        label={<LabelWithTooltip label="Descripción/Caption" tooltip="Descripción de la imagen (Vista frontal, Dimensiones...)" />}
+                                        placeholder="Vista frontal del equipo"
                                         value={img.caption}
                                         onChange={(e) => updateItem(images, setImages, i, 'caption', e.target.value)}
                                       />
                                     </Grid.Col>
-                                    <Grid.Col span={8}>
+                                    <Grid.Col span={3}>
                                       <TextInput
+                                        label={<LabelWithTooltip label="Crédito" tooltip="Autor o fuente de la imagen" />}
+                                        placeholder="Fabricante, Fotógrafo..."
+                                        value={img.credit}
+                                        onChange={(e) => updateItem(images, setImages, i, 'credit', e.target.value)}
+                                      />
+                                    </Grid.Col>
+                                    <Grid.Col span={3}>
+                                      <TextInput
+                                        label={<LabelWithTooltip label="Licencia" tooltip="Licencia de uso (CC BY, Copyright...)" />}
+                                        placeholder="CC BY 4.0"
+                                        value={img.license}
+                                        onChange={(e) => updateItem(images, setImages, i, 'license', e.target.value)}
+                                      />
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <Divider my="xs" label="Ubicación y Archivo" labelPosition="center" />
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <Alert variant="light" color="blue" icon={<IconFolder size={16} />}>
+                                        <Text size="xs" fw={500} mb={4}>
+                                          Ruta automática:
+                                        </Text>
+                                        <Text size="xs" style={{ fontFamily: 'monospace' }}>
+                                          Documentacion_IA\Images\{manufacturerValue || '[Fabricante]'}
+                                        </Text>
+                                      </Alert>
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <FileInput
                                         label={
-                                          <LabelWithTooltip
-                                            label="URL / Ruta"
-                                            tooltip="URL externa (https://...) o ruta local (/uploads/...) de la imagen. Formatos recomendados: JPG, PNG. Verificar que la URL sea accesible permanentemente."
-                                          />
+                                          <Group gap={4}>
+                                            <IconPhoto size={14} />
+                                            <Text size="sm" fw={500}>Archivo de Imagen</Text>
+                                          </Group>
                                         }
-                                        placeholder="https://... o /uploads/..."
-                                        value={img.url_or_path}
-                                        onChange={(e) => updateItem(images, setImages, i, 'url_or_path', e.target.value)}
+                                        placeholder="Elegir imagen..."
+                                        accept="image/*,.jpg,.jpeg,.png,.gif,.webp"
+                                        value={img.file}
+                                        onChange={(file) => handleImageFileChange(i, file)}
+                                        clearable
+                                      />
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <Group justify="space-between">
+                                        <Button
+                                          size="xs"
+                                          variant="light"
+                                          color="violet"
+                                          leftSection={uploadingImages[i] ? <Loader size={14} /> : <IconUpload size={14} />}
+                                          onClick={() => handleUploadImage(i)}
+                                          disabled={!img.file || uploadingImages[i] || img.uploaded || !manufacturerValue}
+                                        >
+                                          {uploadingImages[i] ? 'Subiendo...' : img.uploaded ? 'Imagen Subida' : 'Subir Imagen Ahora'}
+                                        </Button>
+                                        {img.url_or_path && (
+                                          <Badge color="green" variant="dot">
+                                            Guardada en: {img.url_or_path}
+                                          </Badge>
+                                        )}
+                                      </Group>
+                                    </Grid.Col>
+                                    
+                                    <Grid.Col span={12}>
+                                      <Textarea
+                                        label={<LabelWithTooltip label="Notas" tooltip="Información adicional sobre la imagen" />}
+                                        placeholder="Notas adicionales..."
+                                        value={img.notes}
+                                        onChange={(e) => updateItem(images, setImages, i, 'notes', e.target.value)}
+                                        rows={2}
                                       />
                                     </Grid.Col>
                                   </Grid>

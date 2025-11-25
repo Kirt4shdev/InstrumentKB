@@ -44,6 +44,19 @@ export const uploadImage = (formData: FormData) =>
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 
+export const deleteDocument = (id: number) => api.delete(`/upload/document/${id}`);
+export const deleteImage = (id: number) => api.delete(`/upload/image/${id}`);
+
+// Folders
+export const getFolders = (type?: 'document' | 'image') => 
+  api.get('/upload/folders', { params: { type } });
+
+export const getPhysicalFolders = () => 
+  api.get('/upload/folders/physical');
+
+export const previewPath = (data: { folder_path: string; filename: string }) => 
+  api.post('/upload/preview-path', data);
+
 // Export
 export const exportJSON = () => api.get('/export/json');
 export const exportExcel = () => api.get('/export/excel', { responseType: 'blob' });

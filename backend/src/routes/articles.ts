@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { query, transaction } from '../db';
+import fs from 'fs';
+import path from 'path';
 
 export const articlesRouter = Router();
 
@@ -586,7 +588,24 @@ articlesRouter.put('/:id', async (req: Request, res: Response) => {
 
       // Update documents
       if (documents !== undefined) {
+        // Obtener los documentos existentes antes de borrarlos
+        const existingDocs = await client.query('SELECT * FROM documents WHERE article_id = $1', [id]);
+        
+        // Borrar de la BD
         await client.query('DELETE FROM documents WHERE article_id = $1', [id]);
+        
+        // Borrar archivos físicos de los documentos que ya no están en la lista nueva
+        const newPaths = documents.map(d => d.url_or_path);
+        for (const oldDoc of existingDocs.rows) {
+          if (!newPaths.includes(oldDoc.url_or_path) && !oldDoc.url_or_path.startsWith('http')) {
+            const filePath = path.join(process.env.STORAGE_PATH || './uploads', oldDoc.url_or_path);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Deleted orphaned document file: ${filePath}`);
+            }
+          }
+        }
+        
         if (documents.length > 0) {
           for (const d of documents) {
             await client.query(
@@ -602,7 +621,24 @@ articlesRouter.put('/:id', async (req: Request, res: Response) => {
 
       // Update images
       if (images !== undefined) {
+        // Obtener las imágenes existentes antes de borrarlas
+        const existingImgs = await client.query('SELECT * FROM images WHERE article_id = $1', [id]);
+        
+        // Borrar de la BD
         await client.query('DELETE FROM images WHERE article_id = $1', [id]);
+        
+        // Borrar archivos físicos de las imágenes que ya no están en la lista nueva
+        const newPaths = images.map(i => i.url_or_path);
+        for (const oldImg of existingImgs.rows) {
+          if (!newPaths.includes(oldImg.url_or_path) && !oldImg.url_or_path.startsWith('http')) {
+            const filePath = path.join(process.env.STORAGE_PATH || './uploads', oldImg.url_or_path);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Deleted orphaned image file: ${filePath}`);
+            }
+          }
+        }
+        
         if (images.length > 0) {
           for (const i of images) {
             await client.query(
@@ -727,7 +763,37 @@ articlesRouter.put('/:id', async (req: Request, res: Response) => {
 articlesRouter.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    
+    // Obtener documentos e imágenes antes de borrar el artículo
+    const docsResult = await query('SELECT * FROM documents WHERE article_id = $1', [id]);
+    const imgsResult = await query('SELECT * FROM images WHERE article_id = $1', [id]);
+    
+    // Borrar el artículo (cascade eliminará las relaciones en BD)
     await query('DELETE FROM articles WHERE article_id = $1', [id]);
+    
+    // Borrar archivos físicos de documentos
+    const storagePath = process.env.STORAGE_PATH || './uploads';
+    for (const doc of docsResult.rows) {
+      if (!doc.url_or_path.startsWith('http')) {
+        const filePath = path.join(storagePath, doc.url_or_path);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`Deleted document file: ${filePath}`);
+        }
+      }
+    }
+    
+    // Borrar archivos físicos de imágenes
+    for (const img of imgsResult.rows) {
+      if (!img.url_or_path.startsWith('http')) {
+        const filePath = path.join(storagePath, img.url_or_path);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`Deleted image file: ${filePath}`);
+        }
+      }
+    }
+    
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting article:', error);
