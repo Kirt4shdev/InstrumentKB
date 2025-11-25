@@ -125,12 +125,12 @@ function ArticleList() {
   };
 
   return (
-    <Container size="xl" py="sm" className="fade-in">
+    <Container size="responsive" py="sm" className="fade-in" style={{ maxWidth: '95%' }}>
       <Stack gap="sm">
         {/* Header corporativo */}
         <Group justify="space-between" align="center" mb="xs">
           <Box>
-            <Title order={2} style={{ fontWeight: 600, fontSize: '1.5rem' }}>
+            <Title order={2} style={{ fontWeight: 600 }}>
               SAP Article Catalog
             </Title>
             <Text size="sm" c="dimmed">
@@ -217,17 +217,17 @@ function ArticleList() {
           </Paper>
         ) : (
           <Paper className="corporate-card" p={0}>
-            <Table highlightOnHover className="corporate-table" style={{ fontSize: '13px' }}>
+            <Table highlightOnHover className="corporate-table responsive-table">
               <Table.Thead>
                 <Table.Tr style={{ background: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Código SAP</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Tipo</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Descripción</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Categoría</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Fabricante</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Modelo</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px' }}>Estado</Table.Th>
-                  <Table.Th style={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 12px', width: 100 }}>Acciones</Table.Th>
+                  <Table.Th className="table-header">Código SAP</Table.Th>
+                  <Table.Th className="table-header">Tipo</Table.Th>
+                  <Table.Th className="table-header">Descripción</Table.Th>
+                  <Table.Th className="table-header">Categoría</Table.Th>
+                  <Table.Th className="table-header">Fabricante</Table.Th>
+                  <Table.Th className="table-header">Modelo</Table.Th>
+                  <Table.Th className="table-header">Estado</Table.Th>
+                  <Table.Th className="table-header" style={{ width: 100 }}>Acciones</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -237,23 +237,23 @@ function ArticleList() {
                     style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/article/${article.article_id}`)}
                   >
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Text fw={600} size="xs" style={{ color: 'var(--mantine-color-blue-6)' }}>
                         {article.sap_itemcode || '-'}
                       </Text>
-                      <Text size="10px" c="dimmed">ID: {article.article_id}</Text>
+                      <Text size="xs" c="dimmed" className="table-subtext">ID: {article.article_id}</Text>
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Badge color={getTypeColor(article.article_type)} variant="light" size="xs">
                         {article.article_type}
                       </Badge>
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Text lineClamp={1} size="xs">
                         {article.sap_description}
                       </Text>
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       {article.category ? (
                         <Badge variant="dot" size="xs">
                           {article.category}
@@ -262,13 +262,13 @@ function ArticleList() {
                         <Text c="dimmed" size="xs">-</Text>
                       )}
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Text size="xs">{article.manufacturer?.name || '-'}</Text>
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Text size="xs">{article.model || '-'}</Text>
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Badge 
                         color={article.active ? 'green' : 'red'} 
                         variant="dot"
@@ -277,7 +277,7 @@ function ArticleList() {
                         {article.active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </Table.Td>
-                    <Table.Td style={{ padding: '8px 12px' }}>
+                    <Table.Td className="table-cell">
                       <Group gap={4}>
                         <Tooltip label="Ver">
                           <ActionIcon

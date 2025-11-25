@@ -63,7 +63,7 @@ function ArticleDetail() {
 
   if (loading) {
     return (
-      <Container size="lg" py="xl">
+      <Container size="responsive" py="xl" style={{ maxWidth: '92%' }}>
         <Box py="xl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
           <Loader size="lg" color="violet" type="dots" />
           <Text c="dimmed" size="sm">Cargando detalles del artículo...</Text>
@@ -74,7 +74,7 @@ function ArticleDetail() {
 
   if (!article) {
     return (
-      <Container size="lg" py="xl">
+      <Container size="responsive" py="xl" style={{ maxWidth: '92%' }}>
         <Paper 
           p="xl" 
           radius="md"
@@ -104,7 +104,7 @@ function ArticleDetail() {
   }
 
   return (
-    <Container size="lg" py="sm" className="fade-in">
+    <Container size="responsive" py="sm" className="fade-in" style={{ maxWidth: '92%' }}>
       <Stack gap="sm">
         {/* Header corporativo */}
         <Group justify="space-between" align="center" mb="xs">

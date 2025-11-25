@@ -635,7 +635,7 @@ function ArticleNew() {
   const showAdvancedFields = ['INSTRUMENTO', 'SENSOR', 'DATALOGGER', 'ACTUADOR', 'MODULO_IO', 'GATEWAY'].includes(selectedType);
 
   return (
-    <Container size="xl" py="sm" className="fade-in">
+    <Container size="responsive" py="sm" className="fade-in" style={{ maxWidth: '95%' }}>
       <Stack gap="sm">
         {/* Header corporativo */}
         <Group justify="space-between" align="center" mb="xs">

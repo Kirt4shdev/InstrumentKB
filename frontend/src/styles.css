@@ -1,7 +1,30 @@
-/* Estilos globales - Corporativo Moderno */
+/* Estilos globales - Corporativo Moderno con Diseño Responsive */
+
+/* Variables CSS para tamaños de fuente base */
+:root {
+  /* Tamaño base de fuente que se adapta al viewport - Ajustado con límites más razonables */
+  --font-size-base: clamp(14px, 0.5vw + 12px, 16px);
+  --font-size-small: clamp(12px, 0.4vw + 11px, 14px);
+  --font-size-large: clamp(16px, 0.6vw + 14px, 18px);
+  --font-size-xlarge: clamp(18px, 0.8vw + 16px, 22px);
+  --font-size-heading: clamp(20px, 1vw + 18px, 28px);
+  
+  /* Espaciado responsive - más conservador */
+  --spacing-small: clamp(6px, 0.3vw + 5px, 10px);
+  --spacing-medium: clamp(10px, 0.5vw + 8px, 16px);
+  --spacing-large: clamp(14px, 0.8vw + 12px, 24px);
+  
+  /* Ancho de tarjetas y contenedores */
+  --container-padding: clamp(16px, 2vw, 48px);
+}
 
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html {
+  /* Establece el tamaño base para rem */
+  font-size: clamp(14px, 0.5vw + 12px, 16px);
 }
 
 body {
@@ -12,8 +35,86 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   letter-spacing: -0.01em;
+  line-height: 1.6;
+}
+
+/* Ajustes responsive para diferentes tamaños de pantalla */
+
+/* Pantallas pequeñas (móviles) - 320px a 767px */
+@media (max-width: 767px) {
+  :root {
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-large: 16px;
+    --font-size-xlarge: 18px;
+    --font-size-heading: 20px;
+  }
+  
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Pantallas medianas (tablets) - 768px a 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-large: 16px;
+    --font-size-xlarge: 19px;
+    --font-size-heading: 24px;
+  }
+  
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Pantallas grandes (escritorio estándar) - 1024px a 1439px */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  :root {
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-large: 16px;
+    --font-size-xlarge: 20px;
+    --font-size-heading: 26px;
+  }
+  
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Pantallas muy grandes (monitores grandes) - 1440px a 1919px */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  :root {
+    --font-size-base: 15px;
+    --font-size-small: 13px;
+    --font-size-large: 17px;
+    --font-size-xlarge: 21px;
+    --font-size-heading: 27px;
+  }
+  
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Pantallas extra grandes (monitores 4K y ultrawide) - 1920px+ */
+@media (min-width: 1920px) {
+  :root {
+    --font-size-base: 16px;
+    --font-size-small: 14px;
+    --font-size-large: 18px;
+    --font-size-xlarge: 22px;
+    --font-size-heading: 28px;
+  }
+  
+  html {
+    font-size: 16px;
+  }
 }
 
 /* Animaciones sutiles corporativas */
@@ -135,4 +236,160 @@ body {
 
 [data-mantine-color-scheme='dark'] .corporate-divider {
   border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Estilos responsive SOLO para elementos específicos que queremos agrandar */
+
+/* Títulos principales - Responsive */
+.mantine-AppShell-header .mantine-Title-root,
+.mantine-AppShell-header h1 {
+  font-size: var(--font-size-large) !important;
+}
+
+/* Tabla principal - Responsive con clases personalizadas */
+.responsive-table {
+  font-size: var(--font-size-base) !important;
+}
+
+/* Headers de tabla con estilo corporativo y responsive */
+.table-header {
+  font-weight: 600 !important;
+  font-size: var(--font-size-small) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: var(--spacing-small) !important;
+}
+
+/* Celdas de tabla responsive */
+.table-cell {
+  font-size: var(--font-size-base) !important;
+  padding: calc(var(--spacing-small) * 0.7) var(--spacing-small) !important;
+}
+
+/* Texto pequeño dentro de tabla (IDs, subtextos) */
+.table-subtext {
+  font-size: calc(var(--font-size-small) * 0.9) !important;
+}
+
+/* Sobrescribir tamaños de Mantine en tablas */
+.mantine-Table-root th {
+  font-size: var(--font-size-small) !important;
+  padding: var(--spacing-small) !important;
+}
+
+.mantine-Table-root td {
+  font-size: var(--font-size-base) !important;
+  padding: calc(var(--spacing-small) * 0.7) var(--spacing-small) !important;
+}
+
+/* Texto dentro de las celdas de la tabla */
+.mantine-Table-root .mantine-Text-root {
+  font-size: inherit !important;
+}
+
+/* Badges en la tabla responsive */
+.mantine-Table-root .mantine-Badge-root {
+  font-size: var(--font-size-small) !important;
+  padding: calc(var(--spacing-small) * 0.4) var(--spacing-small) !important;
+}
+
+/* Scrollbar más grande en pantallas grandes */
+@media (min-width: 1440px) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (min-width: 1920px) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Ajuste para botones en pantallas grandes */
+@media (min-width: 1440px) {
+  .mantine-Button-root {
+    font-size: var(--font-size-base) !important;
+  }
+}
+
+/* Ajuste para texto del menú principal */
+@media (min-width: 1440px) {
+  .mantine-Menu-item {
+    font-size: var(--font-size-base) !important;
+  }
+  
+  /* Inputs más grandes en pantallas grandes */
+  .mantine-Input-input,
+  .mantine-TextInput-input,
+  .mantine-Select-input {
+    font-size: var(--font-size-base) !important;
+  }
+}
+
+/* Contenedores principales con padding responsive */
+.mantine-AppShell-main {
+  font-size: var(--font-size-base);
+}
+
+/* Sobrescribir tamaños de Mantine globalmente para que sean responsive */
+.mantine-Text-root[data-size="xs"] {
+  font-size: var(--font-size-small) !important;
+}
+
+.mantine-Text-root[data-size="sm"] {
+  font-size: var(--font-size-base) !important;
+}
+
+.mantine-Text-root[data-size="md"] {
+  font-size: var(--font-size-base) !important;
+}
+
+.mantine-Text-root[data-size="lg"] {
+  font-size: var(--font-size-large) !important;
+}
+
+.mantine-Badge-root[data-size="xs"] {
+  font-size: var(--font-size-small) !important;
+}
+
+.mantine-Badge-root[data-size="sm"],
+.mantine-Badge-root[data-size="md"] {
+  font-size: var(--font-size-base) !important;
+}
+
+.mantine-Button-root[data-size="xs"],
+.mantine-Button-root[data-size="compact-xs"] {
+  font-size: var(--font-size-small) !important;
+}
+
+.mantine-Button-root[data-size="sm"],
+.mantine-Button-root[data-size="compact-sm"] {
+  font-size: var(--font-size-base) !important;
+}
+
+/* Container sin límite de ancho en pantallas grandes */
+@media (min-width: 1440px) {
+  .mantine-Container-root {
+    max-width: 95% !important;
+  }
+}
+
+@media (min-width: 1920px) {
+  .mantine-Container-root {
+    max-width: 96% !important;
+  }
+}
+
+/* Títulos de sección responsive */
+@media (min-width: 1440px) {
+  .mantine-Title-root[data-order="2"] {
+    font-size: var(--font-size-xlarge) !important;
+  }
+  
+  .mantine-Title-root[data-order="3"] {
+    font-size: var(--font-size-large) !important;
+  }
 }

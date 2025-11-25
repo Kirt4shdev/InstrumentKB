@@ -22,9 +22,9 @@ const theme = createTheme({
   headings: {
     fontWeight: '600',
     sizes: {
-      h1: { fontSize: '2rem' },
-      h2: { fontSize: '1.5rem' },
-      h3: { fontSize: '1.25rem' },
+      h1: { fontSize: 'clamp(1.75rem, 1.5vw + 1.5rem, 2.5rem)' },
+      h2: { fontSize: 'clamp(1.35rem, 1.2vw + 1.2rem, 2rem)' },
+      h3: { fontSize: 'clamp(1.15rem, 0.8vw + 1rem, 1.5rem)' },
     },
   },
   colors: {
@@ -40,6 +40,22 @@ const theme = createTheme({
       '#1565C0',
       '#0D47A1',
     ],
+  },
+  // Contenedor responsive sin límites estrictos
+  breakpoints: {
+    xs: '36em', // 576px
+    sm: '48em', // 768px
+    md: '62em', // 992px
+    lg: '75em', // 1200px
+    xl: '88em', // 1408px
+  },
+  // Tamaños de fuente responsive
+  fontSizes: {
+    xs: 'clamp(0.6875rem, 0.3vw + 0.625rem, 0.8125rem)', // 11px - 13px
+    sm: 'clamp(0.75rem, 0.4vw + 0.6875rem, 0.9375rem)',  // 12px - 15px
+    md: 'clamp(0.875rem, 0.5vw + 0.75rem, 1rem)',        // 14px - 16px
+    lg: 'clamp(1rem, 0.6vw + 0.875rem, 1.125rem)',       // 16px - 18px
+    xl: 'clamp(1.125rem, 0.8vw + 1rem, 1.375rem)',       // 18px - 22px
   },
 });
 
