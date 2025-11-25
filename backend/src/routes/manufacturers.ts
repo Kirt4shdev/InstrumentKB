@@ -4,6 +4,11 @@ import { z } from 'zod';
 
 export const manufacturersRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 const manufacturerSchema = z.object({
   name: z.string().min(1),
   country: z.string().optional(),
@@ -32,7 +37,7 @@ manufacturersRouter.post('/', async (req: Request, res: Response) => {
       `INSERT INTO manufacturers (name, country, website, support_email, notes)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [data.name, data.country || null, data.website || null, data.support_email || null, data.notes || null]
+      [data.name, toNullable(data.country), toNullable(data.website), toNullable(data.support_email), toNullable(data.notes)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {

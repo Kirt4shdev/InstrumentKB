@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const variablesRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET all variables
 variablesRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -23,7 +28,7 @@ variablesRouter.post('/', async (req: Request, res: Response) => {
       `INSERT INTO variables_dict (name, unit_default, description)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [name, unit_default || null, description || null]
+      [name, toNullable(unit_default), toNullable(description)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -40,8 +45,8 @@ variablesRouter.post('/instrument-variables', async (req: Request, res: Response
       `INSERT INTO article_variables (article_id, variable_id, range_min, range_max, unit, accuracy_abs, resolution, update_rate_hz, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [article_id, variable_id, range_min || null, range_max || null, unit || null, 
-       accuracy_abs || null, resolution || null, update_rate_hz || null, notes || null]
+      [article_id, variable_id, toNullable(range_min), toNullable(range_max), toNullable(unit), 
+       toNullable(accuracy_abs), toNullable(resolution), toNullable(update_rate_hz), toNullable(notes)]
     );
     
     // Get full data with joins

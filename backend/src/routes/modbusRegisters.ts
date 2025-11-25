@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const modbusRegistersRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET modbus registers for article
 modbusRegistersRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -34,9 +39,9 @@ modbusRegistersRouter.post('/', async (req: Request, res: Response) => {
        datatype, scale, unit, rw, min, max, default_value, notes, reference_document_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
-      [article_id, function_code, address, name, description || null, datatype || null,
-       scale || null, unit || null, rw, min || null, max || null, default_value || null,
-       notes || null, reference_document_id || null]
+      [article_id, function_code, address, name, toNullable(description), toNullable(datatype),
+       toNullable(scale), toNullable(unit), rw, toNullable(min), toNullable(max), toNullable(default_value),
+       toNullable(notes), toNullable(reference_document_id)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error: any) {

@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const analogOutputsRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET analog outputs for article
 analogOutputsRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -34,9 +39,9 @@ analogOutputsRouter.post('/', async (req: Request, res: Response) => {
        load_min_ohm, load_max_ohm, accuracy, scaling_notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [article_id, type, num_channels || null, range_min || null, range_max || null,
-       unit || null, load_min_ohm || null, load_max_ohm || null, accuracy || null, 
-       scaling_notes || null]
+      [article_id, type, toNullable(num_channels), toNullable(range_min), toNullable(range_max),
+       toNullable(unit), toNullable(load_min_ohm), toNullable(load_max_ohm), toNullable(accuracy), 
+       toNullable(scaling_notes)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {

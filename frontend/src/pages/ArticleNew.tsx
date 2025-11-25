@@ -152,6 +152,11 @@ function ArticleNew() {
     }
   }, [id]);
 
+  // Helper function to preserve 0 values
+  const valueOrEmpty = (value: any) => {
+    return value !== null && value !== undefined ? value : '';
+  };
+
   const loadArticleData = async (articleId: string) => {
     try {
       setLoading(true);
@@ -169,33 +174,33 @@ function ArticleNew() {
         manufacturer_id: article.manufacturer_id?.toString() || '',
         model: article.model || '',
         variant: article.variant || '',
-        power_supply_min_v: article.power_supply_min_v || '',
-        power_supply_max_v: article.power_supply_max_v || '',
-        power_consumption_typ_w: article.power_consumption_typ_w || '',
-        current_max_a: article.current_max_a || '',
-        voltage_rating_v: article.voltage_rating_v || '',
+        power_supply_min_v: valueOrEmpty(article.power_supply_min_v),
+        power_supply_max_v: valueOrEmpty(article.power_supply_max_v),
+        power_consumption_typ_w: valueOrEmpty(article.power_consumption_typ_w),
+        current_max_a: valueOrEmpty(article.current_max_a),
+        voltage_rating_v: valueOrEmpty(article.voltage_rating_v),
         ip_rating: article.ip_rating || '',
         dimensions_mm: article.dimensions_mm || '',
-        weight_g: article.weight_g || '',
-        length_m: article.length_m || '',
-        diameter_mm: article.diameter_mm || '',
+        weight_g: valueOrEmpty(article.weight_g),
+        length_m: valueOrEmpty(article.length_m),
+        diameter_mm: valueOrEmpty(article.diameter_mm),
         material: article.material || '',
         color: article.color || '',
-        oper_temp_min_c: article.oper_temp_min_c || '',
-        oper_temp_max_c: article.oper_temp_max_c || '',
-        storage_temp_min_c: article.storage_temp_min_c || '',
-        storage_temp_max_c: article.storage_temp_max_c || '',
-        oper_humidity_min_pct: article.oper_humidity_min_pct || '',
-        oper_humidity_max_pct: article.oper_humidity_max_pct || '',
-        altitude_max_m: article.altitude_max_m || '',
+        oper_temp_min_c: valueOrEmpty(article.oper_temp_min_c),
+        oper_temp_max_c: valueOrEmpty(article.oper_temp_max_c),
+        storage_temp_min_c: valueOrEmpty(article.storage_temp_min_c),
+        storage_temp_max_c: valueOrEmpty(article.storage_temp_max_c),
+        oper_humidity_min_pct: valueOrEmpty(article.oper_humidity_min_pct),
+        oper_humidity_max_pct: valueOrEmpty(article.oper_humidity_max_pct),
+        altitude_max_m: valueOrEmpty(article.altitude_max_m),
         has_heating: article.has_heating || false,
-        heating_consumption_w: article.heating_consumption_w || '',
-        heating_temp_min_c: article.heating_temp_min_c || '',
-        heating_temp_max_c: article.heating_temp_max_c || '',
+        heating_consumption_w: valueOrEmpty(article.heating_consumption_w),
+        heating_temp_min_c: valueOrEmpty(article.heating_temp_min_c),
+        heating_temp_max_c: valueOrEmpty(article.heating_temp_max_c),
         emc_compliance: article.emc_compliance || '',
         certifications: article.certifications || '',
-        first_release_year: article.first_release_year || '',
-        last_revision_year: article.last_revision_year || '',
+        first_release_year: valueOrEmpty(article.first_release_year),
+        last_revision_year: valueOrEmpty(article.last_revision_year),
         internal_notes: article.internal_notes || '',
         active: article.active ?? true,
       });
@@ -309,10 +314,11 @@ function ArticleNew() {
       // Preparar datos
       const data: any = {};
       
-      // Copiar solo campos con valores
+      // Copiar solo campos con valores (permitir 0 y false)
       Object.keys(values).forEach(key => {
         const value = (values as any)[key];
-        if (value !== '' && value !== null && value !== undefined) {
+        // Permitir 0, false, y strings vacíos, pero filtrar null y undefined
+        if (value !== null && value !== undefined && value !== '') {
           // Convertir manufacturer_id de string a número
           if (key === 'manufacturer_id') {
             const numValue = parseInt(value);
@@ -360,16 +366,16 @@ function ArticleNew() {
               }
             }
             
-            // Agregar la variable con su ID
+            // Agregar la variable con su ID (preservar valores 0)
             if (existingVariable) {
               processedVariables.push({
                 variable_id: existingVariable.variable_id,
-                range_min: v.range_min || null,
-                range_max: v.range_max || null,
+                range_min: v.range_min !== null && v.range_min !== undefined && v.range_min !== '' ? v.range_min : null,
+                range_max: v.range_max !== null && v.range_max !== undefined && v.range_max !== '' ? v.range_max : null,
                 unit: v.unit || null,
-                accuracy_abs: v.accuracy_abs || null,
-                resolution: v.resolution || null,
-                update_rate_hz: v.update_rate_hz || null,
+                accuracy_abs: v.accuracy_abs !== null && v.accuracy_abs !== undefined && v.accuracy_abs !== '' ? v.accuracy_abs : null,
+                resolution: v.resolution !== null && v.resolution !== undefined && v.resolution !== '' ? v.resolution : null,
+                update_rate_hz: v.update_rate_hz !== null && v.update_rate_hz !== undefined && v.update_rate_hz !== '' ? v.update_rate_hz : null,
                 notes: v.notes || null
               });
             }
@@ -601,10 +607,10 @@ function ArticleNew() {
   const getPreviewObject = () => {
     const preview: any = {};
     
-    // Copiar solo campos con valores
+    // Copiar solo campos con valores (permitir 0 y false)
     Object.keys(form.values).forEach(key => {
       const value = (form.values as any)[key];
-      if (value !== '' && value !== null && value !== undefined) {
+      if (value !== null && value !== undefined && value !== '') {
         preview[key] = value;
       }
     });
@@ -1530,6 +1536,32 @@ function ArticleNew() {
                               />
                             </Grid.Col>
                             <Grid.Col span={2}>
+                              <NumberInput
+                                label={
+                                  <LabelWithTooltip
+                                    label="Rango Mín"
+                                    tooltip="Valor mínimo de la variable medida que representa esta salida. Ejemplo: Si la salida es 4-20mA representando 0-100°C, aquí va 0"
+                                  />
+                                }
+                                placeholder="0"
+                                value={ao.range_min}
+                                onChange={(val) => updateItem(analogOutputs, setAnalogOutputs, i, 'range_min', val)}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={2}>
+                              <NumberInput
+                                label={
+                                  <LabelWithTooltip
+                                    label="Rango Máx"
+                                    tooltip="Valor máximo de la variable medida que representa esta salida. Ejemplo: Si la salida es 4-20mA representando 0-100°C, aquí va 100"
+                                  />
+                                }
+                                placeholder="100"
+                                value={ao.range_max}
+                                onChange={(val) => updateItem(analogOutputs, setAnalogOutputs, i, 'range_max', val)}
+                              />
+                            </Grid.Col>
+                            <Grid.Col span={2}>
                               <TextInput
                                 label={
                                   <LabelWithTooltip
@@ -1541,7 +1573,7 @@ function ArticleNew() {
                                 onChange={(e) => updateItem(analogOutputs, setAnalogOutputs, i, 'unit', e.target.value)}
                               />
                             </Grid.Col>
-                            <Grid.Col span={4}>
+                            <Grid.Col span={12}>
                               <TextInput
                                 label={
                                   <LabelWithTooltip
@@ -1553,14 +1585,18 @@ function ArticleNew() {
                                 onChange={(e) => updateItem(analogOutputs, setAnalogOutputs, i, 'scaling_notes', e.target.value)}
                               />
                             </Grid.Col>
-                            <Grid.Col span={1}>
-                              <ActionIcon 
-                                color="red" 
-                                onClick={() => removeItem(analogOutputs, setAnalogOutputs, i)}
-                                mt="xl"
-                              >
-                                <IconTrash size={16} />
-                              </ActionIcon>
+                            <Grid.Col span={12}>
+                              <Group justify="flex-end">
+                                <Button 
+                                  color="red" 
+                                  variant="light"
+                                  size="xs"
+                                  leftSection={<IconTrash size={14} />}
+                                  onClick={() => removeItem(analogOutputs, setAnalogOutputs, i)}
+                                >
+                                  Eliminar
+                                </Button>
+                              </Group>
                             </Grid.Col>
                           </Grid>
                         ))}

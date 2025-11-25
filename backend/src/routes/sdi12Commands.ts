@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const sdi12CommandsRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET SDI-12 commands for article
 sdi12CommandsRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -32,7 +37,7 @@ sdi12CommandsRouter.post('/', async (req: Request, res: Response) => {
       `INSERT INTO sdi12_commands (article_id, command, description, response_format, reference_document_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [article_id, command, description || null, response_format || null, reference_document_id || null]
+      [article_id, command, toNullable(description), toNullable(response_format), toNullable(reference_document_id)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error: any) {

@@ -6,6 +6,12 @@ import path from 'path';
 
 export const importRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  // Preserve 0, false, and empty strings but convert undefined/null to null
+  return value === undefined || value === null ? null : value;
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({ 
@@ -115,8 +121,8 @@ async function importArticle(client: any, articleData: any) {
       await client.query(
         `INSERT INTO article_variables (article_id, variable_id, range_min, range_max, unit, accuracy_abs, accuracy_rel_pct, resolution, update_rate_hz, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [article_id, v.variable_id, v.range_min || null, v.range_max || null, v.unit || null, 
-         v.accuracy_abs || null, v.accuracy_rel_pct || null, v.resolution || null, v.update_rate_hz || null, v.notes || null]
+        [article_id, v.variable_id, toNullable(v.range_min), toNullable(v.range_max), toNullable(v.unit), 
+         toNullable(v.accuracy_abs), toNullable(v.accuracy_rel_pct), toNullable(v.resolution), toNullable(v.update_rate_hz), toNullable(v.notes)]
       );
     }
   }
@@ -127,9 +133,9 @@ async function importArticle(client: any, articleData: any) {
         `INSERT INTO article_protocols (article_id, type, physical_layer, port_label, default_address, 
          baudrate, databits, parity, stopbits, ip_address, ip_port, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [article_id, p.type, p.physical_layer || null, p.port_label || null, p.default_address || null,
-         p.baudrate || null, p.databits || null, p.parity || null, p.stopbits || null, 
-         p.ip_address || null, p.ip_port || null, p.notes || null]
+        [article_id, p.type, toNullable(p.physical_layer), toNullable(p.port_label), toNullable(p.default_address),
+         toNullable(p.baudrate), toNullable(p.databits), toNullable(p.parity), toNullable(p.stopbits), 
+         toNullable(p.ip_address), toNullable(p.ip_port), toNullable(p.notes)]
       );
     }
   }
@@ -140,9 +146,9 @@ async function importArticle(client: any, articleData: any) {
         `INSERT INTO analog_outputs (article_id, type, num_channels, range_min, range_max, unit, 
          load_min_ohm, load_max_ohm, accuracy, scaling_notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [article_id, ao.type, ao.num_channels || null, ao.range_min || null, ao.range_max || null,
-         ao.unit || null, ao.load_min_ohm || null, ao.load_max_ohm || null, ao.accuracy || null, 
-         ao.scaling_notes || null]
+        [article_id, ao.type, toNullable(ao.num_channels), toNullable(ao.range_min), toNullable(ao.range_max),
+         toNullable(ao.unit), toNullable(ao.load_min_ohm), toNullable(ao.load_max_ohm), toNullable(ao.accuracy), 
+         toNullable(ao.scaling_notes)]
       );
     }
   }
@@ -153,8 +159,8 @@ async function importArticle(client: any, articleData: any) {
         `INSERT INTO digital_io (article_id, direction, signal_type, voltage_level, current_max_ma, 
          frequency_max_hz, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [article_id, dio.direction, dio.signal_type, dio.voltage_level || null, 
-         dio.current_max_ma || null, dio.frequency_max_hz || null, dio.notes || null]
+        [article_id, dio.direction, dio.signal_type, toNullable(dio.voltage_level), 
+         toNullable(dio.current_max_ma), toNullable(dio.frequency_max_hz), toNullable(dio.notes)]
       );
     }
   }
@@ -165,9 +171,9 @@ async function importArticle(client: any, articleData: any) {
         `INSERT INTO modbus_registers (article_id, function_code, address, name, description, datatype, 
          scale, unit, rw, min, max, default_value, notes, reference_document_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-        [article_id, m.function_code, m.address, m.name, m.description || null, m.datatype || null,
-         m.scale || null, m.unit || null, m.rw, m.min || null, m.max || null, m.default_value || null,
-         m.notes || null, m.reference_document_id || null]
+        [article_id, m.function_code, m.address, m.name, toNullable(m.description), toNullable(m.datatype),
+         toNullable(m.scale), toNullable(m.unit), m.rw, toNullable(m.min), toNullable(m.max), toNullable(m.default_value),
+         toNullable(m.notes), toNullable(m.reference_document_id)]
       );
     }
   }
@@ -177,8 +183,8 @@ async function importArticle(client: any, articleData: any) {
       await client.query(
         `INSERT INTO sdi12_commands (article_id, command, description, response_format, reference_document_id)
          VALUES ($1, $2, $3, $4, $5)`,
-        [article_id, s.command, s.description || null, s.response_format || null, 
-         s.reference_document_id || null]
+        [article_id, s.command, toNullable(s.description), toNullable(s.response_format), 
+         toNullable(s.reference_document_id)]
       );
     }
   }
@@ -188,7 +194,7 @@ async function importArticle(client: any, articleData: any) {
       await client.query(
         `INSERT INTO nmea_sentences (article_id, sentence, description, fields, reference_document_id)
          VALUES ($1, $2, $3, $4, $5)`,
-        [article_id, n.sentence, n.description || null, n.fields || null, n.reference_document_id || null]
+        [article_id, n.sentence, toNullable(n.description), toNullable(n.fields), toNullable(n.reference_document_id)]
       );
     }
   }
@@ -199,8 +205,8 @@ async function importArticle(client: any, articleData: any) {
         `INSERT INTO documents (article_id, type, title, language, revision, publish_date, url_or_path, 
          sha256, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [article_id, d.type, d.title, d.language || null, d.revision || null, d.publish_date || null,
-         d.url_or_path, d.sha256 || null, d.notes || null]
+        [article_id, d.type, d.title, toNullable(d.language), toNullable(d.revision), toNullable(d.publish_date),
+         d.url_or_path, toNullable(d.sha256), toNullable(d.notes)]
       );
     }
   }
@@ -210,7 +216,7 @@ async function importArticle(client: any, articleData: any) {
       await client.query(
         `INSERT INTO images (article_id, caption, url_or_path, credit, license, notes)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [article_id, i.caption || null, i.url_or_path, i.credit || null, i.license || null, i.notes || null]
+        [article_id, toNullable(i.caption), i.url_or_path, toNullable(i.credit), toNullable(i.license), toNullable(i.notes)]
       );
     }
   }
@@ -229,8 +235,8 @@ async function importArticle(client: any, articleData: any) {
       await client.query(
         `INSERT INTO accessories (article_id, name, part_number, description, quantity, notes)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [article_id, acc.name, acc.part_number || null, acc.description || null,
-         acc.quantity || null, acc.notes || null]
+        [article_id, acc.name, toNullable(acc.part_number), toNullable(acc.description),
+         toNullable(acc.quantity), toNullable(acc.notes)]
       );
     }
   }
@@ -283,10 +289,10 @@ importRouter.post('/json', upload.single('file'), async (req: Request, res: Resp
               [
                 article.manufacturer.manufacturer_id,
                 article.manufacturer.name,
-                article.manufacturer.country || null,
-                article.manufacturer.website || null,
-                article.manufacturer.support_email || null,
-                article.manufacturer.notes || null
+                toNullable(article.manufacturer.country),
+                toNullable(article.manufacturer.website),
+                toNullable(article.manufacturer.support_email),
+                toNullable(article.manufacturer.notes)
               ]
             );
           });
@@ -311,8 +317,8 @@ importRouter.post('/json', upload.single('file'), async (req: Request, res: Resp
                   [
                     av.variable.variable_id,
                     av.variable.name,
-                    av.variable.unit_default || null,
-                    av.variable.description || null
+                    toNullable(av.variable.unit_default),
+                    toNullable(av.variable.description)
                   ]
                 );
               });

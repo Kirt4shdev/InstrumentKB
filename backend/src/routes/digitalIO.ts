@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const digitalIORouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET digital I/O for article
 digitalIORouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -34,8 +39,8 @@ digitalIORouter.post('/', async (req: Request, res: Response) => {
        current_max_ma, frequency_max_hz, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [article_id, direction, signal_type, voltage_level || null, 
-       current_max_ma || null, frequency_max_hz || null, notes || null]
+      [article_id, direction, signal_type, toNullable(voltage_level), 
+       toNullable(current_max_ma), toNullable(frequency_max_hz), toNullable(notes)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {

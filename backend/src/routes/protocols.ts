@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const protocolsRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET protocols for article
 protocolsRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -34,9 +39,9 @@ protocolsRouter.post('/', async (req: Request, res: Response) => {
        baudrate, databits, parity, stopbits, ip_address, ip_port, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
-      [article_id, type, physical_layer || null, port_label || null, default_address || null,
-       baudrate || null, databits || null, parity || null, stopbits || null, 
-       ip_address || null, ip_port || null, notes || null]
+      [article_id, type, toNullable(physical_layer), toNullable(port_label), toNullable(default_address),
+       toNullable(baudrate), toNullable(databits), toNullable(parity), toNullable(stopbits), 
+       toNullable(ip_address), toNullable(ip_port), toNullable(notes)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {

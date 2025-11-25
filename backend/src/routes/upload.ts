@@ -7,6 +7,11 @@ import { query } from '../db';
 
 export const uploadRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // Configurar storage
 const storagePath = process.env.STORAGE_PATH || './uploads';
 
@@ -61,8 +66,8 @@ uploadRouter.post('/document', upload.single('file'), async (req: Request, res: 
       `INSERT INTO documents (article_id, type, title, language, revision, publish_date, url_or_path, sha256, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [article_id, type, title, language || null, revision || null, 
-       publish_date ? new Date(publish_date) : null, relativePath, sha256, notes || null]
+      [article_id, type, title, toNullable(language), toNullable(revision), 
+       publish_date ? new Date(publish_date) : null, relativePath, sha256, toNullable(notes)]
     );
 
     res.status(201).json(result.rows[0]);
@@ -86,7 +91,7 @@ uploadRouter.post('/image', upload.single('file'), async (req: Request, res: Res
       `INSERT INTO images (article_id, caption, url_or_path, credit, license, notes)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [article_id, caption || null, relativePath, credit || null, license || null, notes || null]
+      [article_id, toNullable(caption), relativePath, toNullable(credit), toNullable(license), toNullable(notes)]
     );
 
     res.status(201).json(result.rows[0]);

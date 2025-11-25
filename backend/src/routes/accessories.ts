@@ -3,6 +3,11 @@ import { query } from '../db';
 
 export const accessoriesRouter = Router();
 
+// Helper function to handle null values preserving 0
+function toNullable(value: any): any {
+  return value === undefined || value === null ? null : value;
+}
+
 // GET accessories for article
 accessoriesRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -32,8 +37,8 @@ accessoriesRouter.post('/', async (req: Request, res: Response) => {
       `INSERT INTO accessories (article_id, name, part_number, description, quantity, notes)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [article_id, name, part_number || null, description || null, 
-       quantity || null, notes || null]
+      [article_id, name, toNullable(part_number), toNullable(description), 
+       toNullable(quantity), toNullable(notes)]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -52,7 +57,7 @@ accessoriesRouter.put('/:id', async (req: Request, res: Response) => {
        SET name = $1, part_number = $2, description = $3, quantity = $4, notes = $5
        WHERE accessory_id = $6
        RETURNING *`,
-      [name, part_number || null, description || null, quantity || null, notes || null, id]
+      [name, toNullable(part_number), toNullable(description), toNullable(quantity), toNullable(notes), id]
     );
     
     if (result.rows.length === 0) {
@@ -75,4 +80,5 @@ accessoriesRouter.delete('/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error deleting accessory' });
   }
 });
+
 
