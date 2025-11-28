@@ -6,7 +6,11 @@ export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  // Configuraciones para archivos grandes
+  timeout: 300000, // 5 minutos
+  maxContentLength: 500 * 1024 * 1024, // 500MB
+  maxBodyLength: 500 * 1024 * 1024, // 500MB
 });
 
 // Articles (reemplaza instruments)
@@ -61,6 +65,7 @@ export const previewPath = (data: { folder_path: string; filename: string }) =>
 export const exportJSON = () => api.get('/export/json');
 export const exportExcel = () => api.get('/export/excel', { responseType: 'blob' });
 export const exportSQL = () => api.get('/export/sql');
+export const exportZIP = () => api.get('/export/zip', { responseType: 'blob' });
 
 // Import
 export const importJSON = (formData: FormData) => 
@@ -75,6 +80,11 @@ export const importExcel = (formData: FormData) =>
 
 export const importSQL = (formData: FormData) => 
   api.post('/import/sql', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+export const importZIP = (formData: FormData) => 
+  api.post('/import/zip', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 

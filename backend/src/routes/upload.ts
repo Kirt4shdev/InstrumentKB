@@ -63,7 +63,7 @@ function getUniqueFilename(dirPath: string, filename: string): string {
 // Multer configuration con memoria temporal
 const upload = multer({ 
   storage: multer.memoryStorage(), // Usamos memoria temporal
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+  limits: { fileSize: 500 * 1024 * 1024 } // 500MB para documentos grandes (manuales técnicos, etc.)
 });
 
 // Calcular SHA256

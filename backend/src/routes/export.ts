@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db';
 import * as XLSX from 'xlsx';
+import archiver from 'archiver';
+import path from 'path';
+import fs from 'fs';
 
 export const exportRouter = Router();
 
@@ -557,5 +560,153 @@ COMMIT;
   } catch (error) {
     console.error('SQL export error:', error);
     res.status(500).json({ error: 'Error exporting SQL' });
+  }
+});
+
+// GET export as ZIP with files (complete backup)
+exportRouter.get('/zip', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting ZIP export with files...');
+    
+    const storagePath = process.env.STORAGE_PATH || './uploads';
+    
+    // Fetch all articles
+    const articlesResult = await query('SELECT article_id FROM articles ORDER BY article_id');
+    
+    console.log(`Fetching ${articlesResult.rows.length} articles with all relations...`);
+    
+    // Get full data for each article
+    const articles = [];
+    for (const row of articlesResult.rows) {
+      const fullArticle = await getFullArticle(row.article_id);
+      if (fullArticle) {
+        articles.push(fullArticle);
+      }
+    }
+
+    console.log(`Successfully fetched ${articles.length} complete articles with all relations`);
+
+    const exportData = {
+      exported_at: new Date().toISOString(),
+      version: '2.0',
+      sap_integration: true,
+      total_articles: articles.length,
+      articles: articles
+    };
+
+    // Create ZIP archive
+    const archive = archiver('zip', {
+      zlib: { level: 9 } // Maximum compression
+    });
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="instrumentkb-complete-backup-${Date.now()}.zip"`);
+
+    // Pipe archive to response
+    archive.pipe(res);
+
+    // Add JSON data file
+    archive.append(JSON.stringify(exportData, null, 2), { name: 'data.json' });
+
+    // Collect all file paths from documents and images
+    const filesToExport = new Set<string>();
+    
+    for (const article of articles) {
+      // Add documents
+      if (article.documents && Array.isArray(article.documents)) {
+        for (const doc of article.documents) {
+          if (doc.url_or_path) {
+            filesToExport.add(doc.url_or_path);
+          }
+        }
+      }
+      
+      // Add images
+      if (article.images && Array.isArray(article.images)) {
+        for (const img of article.images) {
+          if (img.url_or_path) {
+            filesToExport.add(img.url_or_path);
+          }
+        }
+      }
+    }
+
+    console.log(`Found ${filesToExport.size} files to export`);
+
+    // Add files to ZIP maintaining folder structure
+    let filesAdded = 0;
+    let filesMissing = 0;
+    const missingFiles: string[] = [];
+
+    for (const relativePath of filesToExport) {
+      const fullPath = path.join(storagePath, relativePath);
+      
+      if (fs.existsSync(fullPath)) {
+        try {
+          // Add file to ZIP with the same relative path under 'uploads/' folder
+          archive.file(fullPath, { name: `uploads/${relativePath.replace(/\\/g, '/')}` });
+          filesAdded++;
+        } catch (error) {
+          console.error(`Error adding file ${relativePath}:`, error);
+          missingFiles.push(relativePath);
+          filesMissing++;
+        }
+      } else {
+        console.warn(`File not found: ${fullPath}`);
+        missingFiles.push(relativePath);
+        filesMissing++;
+      }
+    }
+
+    // Add a README file with import instructions
+    const readme = `# InstrumentKB Complete Backup
+    
+Exported at: ${new Date().toISOString()}
+Version: 2.0
+Total articles: ${articles.length}
+Files included: ${filesAdded}
+Files missing: ${filesMissing}
+
+## Contents:
+- data.json: Complete database export with all articles and relations
+- uploads/: All documents and images organized in their original folder structure
+
+## How to import:
+
+1. Upload this ZIP file through the import interface
+2. The system will:
+   - Extract all files
+   - Import the database records from data.json
+   - Place files in the uploads folder with the same structure
+   - Maintain all references between articles and files
+
+## Missing files:
+${missingFiles.length > 0 ? missingFiles.join('\n') : 'None - all files were exported successfully!'}
+
+## Notes:
+- All file paths are preserved exactly as they were
+- Simply upload this ZIP to restore the complete system
+- The import will handle duplicates automatically (update existing records)
+`;
+
+    archive.append(readme, { name: 'README.txt' });
+
+    // Finalize archive
+    await archive.finalize();
+
+    console.log(`Export completed: ${filesAdded} files added, ${filesMissing} files missing`);
+  } catch (error) {
+    console.error('ZIP export error:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // If headers not sent, send error response
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Error exporting ZIP',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 });

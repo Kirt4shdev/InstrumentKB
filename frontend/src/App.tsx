@@ -1,8 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import { AppShell, Group, Title, Button, Menu, ActionIcon, useMantineColorScheme, Box, Text, Divider } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
-import { IconDownload, IconFileTypeCsv, IconFileTypeXls, IconDatabase, IconSun, IconMoon, IconApps, IconPlus, IconChevronDown, IconUpload } from '@tabler/icons-react';
-import { exportJSON, exportExcel, exportSQL, importJSON, importExcel, importSQL } from './api';
+import { IconDownload, IconFileTypeCsv, IconFileTypeXls, IconDatabase, IconSun, IconMoon, IconApps, IconPlus, IconChevronDown, IconUpload, IconFileZip } from '@tabler/icons-react';
+import { exportJSON, exportExcel, exportSQL, exportZIP, importJSON, importExcel, importSQL, importZIP } from './api';
 import { notifications } from '@mantine/notifications';
 import { useRef } from 'react';
 import ArticleList from './pages/ArticleList';
@@ -15,6 +15,7 @@ function App() {
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
   const sqlInputRef = useRef<HTMLInputElement>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportJSON = async () => {
     try {
@@ -144,7 +145,49 @@ function App() {
     }
   };
 
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>, type: 'json' | 'excel' | 'sql') => {
+  const handleExportZIP = async () => {
+    try {
+      notifications.show({
+        title: 'Exportando...',
+        message: 'Generando backup completo con archivos (puede tardar varios minutos)',
+        loading: true,
+        autoClose: false,
+        id: 'export-zip'
+      });
+
+      const response = await exportZIP();
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `instrumentkb-complete-backup-${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      notifications.update({
+        id: 'export-zip',
+        title: 'Exportación completada',
+        message: 'Backup completo descargado correctamente (con todos los archivos)',
+        color: 'green',
+        loading: false,
+        autoClose: 5000
+      });
+    } catch (error) {
+      notifications.update({
+        id: 'export-zip',
+        title: 'Error',
+        message: 'Error al exportar backup completo',
+        color: 'red',
+        loading: false,
+        autoClose: 3000
+      });
+      console.error('Export error:', error);
+    }
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>, type: 'json' | 'excel' | 'sql' | 'zip') => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -165,6 +208,8 @@ function App() {
         response = await importJSON(formData);
       } else if (type === 'excel') {
         response = await importExcel(formData);
+      } else if (type === 'zip') {
+        response = await importZIP(formData);
       } else {
         response = await importSQL(formData);
       }
@@ -177,7 +222,7 @@ function App() {
       }
       
       const message = result.imported !== undefined 
-        ? `${result.imported} creados, ${result.updated || 0} actualizados${result.failed ? `, ${result.failed} fallidos` : ''}`
+        ? `${result.imported} creados, ${result.updated || 0} actualizados${result.failed ? `, ${result.failed} fallidos` : ''}${result.files_copied ? `, ${result.files_copied} archivos copiados` : ''}`
         : 'Importación completada';
 
       const hasErrors = result.failed > 0 || (result.errors && result.errors.length > 0);
@@ -267,6 +312,18 @@ function App() {
 
               <Menu.Dropdown>
                 <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
+                  Backup Completo
+                </Menu.Label>
+                <Menu.Item
+                  leftSection={<IconFileZip size={14} />}
+                  onClick={() => zipInputRef.current?.click()}
+                  style={{ fontSize: '13px' }}
+                  color="blue"
+                >
+                  ZIP (Con archivos)
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
                   Formatos de Importación
                 </Menu.Label>
                 <Menu.Item
@@ -298,6 +355,13 @@ function App() {
             </Menu>
 
             {/* Inputs ocultos para importación */}
+            <input
+              ref={zipInputRef}
+              type="file"
+              accept=".zip"
+              style={{ display: 'none' }}
+              onChange={(e) => handleImportFile(e, 'zip')}
+            />
             <input
               ref={jsonInputRef}
               type="file"
@@ -339,6 +403,18 @@ function App() {
               </Menu.Target>
 
               <Menu.Dropdown>
+                <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
+                  Backup Completo
+                </Menu.Label>
+                <Menu.Item
+                  leftSection={<IconFileZip size={14} />}
+                  onClick={handleExportZIP}
+                  style={{ fontSize: '13px' }}
+                  color="blue"
+                >
+                  ZIP (Con archivos)
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Label style={{ fontSize: '11px', fontWeight: 600 }}>
                   Formatos de Exportación
                 </Menu.Label>

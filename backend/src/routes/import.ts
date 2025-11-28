@@ -3,6 +3,9 @@ import { transaction } from '../db';
 import * as XLSX from 'xlsx';
 import multer from 'multer';
 import path from 'path';
+import extract from 'extract-zip';
+import fs from 'fs';
+import os from 'os';
 
 export const importRouter = Router();
 
@@ -17,7 +20,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB max
+    fileSize: 500 * 1024 * 1024 // 500MB max
   }
 });
 
@@ -612,6 +615,230 @@ importRouter.post('/sql', upload.single('file'), async (req: Request, res: Respo
     res.status(500).json({ 
       error: 'Error importing SQL', 
       message: error.message 
+    });
+  }
+});
+
+// POST import ZIP with files (complete restore)
+importRouter.post('/zip', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log('Starting ZIP import...');
+
+    const storagePath = process.env.STORAGE_PATH || './uploads';
+    
+    // Create a temporary directory for extraction
+    const tempDir = path.join(os.tmpdir(), `instrumentkb-import-${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    try {
+      // Save uploaded file to temp location
+      const tempZipPath = path.join(tempDir, 'upload.zip');
+      fs.writeFileSync(tempZipPath, req.file.buffer);
+
+      console.log(`Extracting ZIP to ${tempDir}...`);
+
+      // Extract ZIP
+      await extract(tempZipPath, { dir: tempDir });
+
+      console.log('ZIP extracted successfully');
+
+      // Read data.json
+      const dataJsonPath = path.join(tempDir, 'data.json');
+      if (!fs.existsSync(dataJsonPath)) {
+        throw new Error('data.json not found in ZIP file');
+      }
+
+      const fileContent = fs.readFileSync(dataJsonPath, 'utf-8');
+      const data = JSON.parse(fileContent);
+
+      let articles = [];
+      
+      // Check if it's a complete export or just an array of articles
+      if (Array.isArray(data)) {
+        articles = data;
+      } else if (data.articles && Array.isArray(data.articles)) {
+        articles = data.articles;
+      } else if (data.article_id) {
+        // Single article
+        articles = [data];
+      } else {
+        throw new Error('Invalid JSON format in data.json');
+      }
+
+      console.log(`Found ${articles.length} articles to import`);
+
+      // Copy files from uploads/ folder in ZIP to actual uploads folder
+      const uploadsSourceDir = path.join(tempDir, 'uploads');
+      let filesCopied = 0;
+      let filesSkipped = 0;
+
+      if (fs.existsSync(uploadsSourceDir)) {
+        console.log('Copying files from ZIP to uploads folder...');
+        
+        // Recursive function to copy directory structure
+        function copyDirectory(source: string, target: string) {
+          // Create target directory if it doesn't exist
+          if (!fs.existsSync(target)) {
+            fs.mkdirSync(target, { recursive: true });
+          }
+
+          // Read source directory
+          const entries = fs.readdirSync(source, { withFileTypes: true });
+
+          for (const entry of entries) {
+            const sourcePath = path.join(source, entry.name);
+            const targetPath = path.join(target, entry.name);
+
+            if (entry.isDirectory()) {
+              // Recursively copy subdirectory
+              copyDirectory(sourcePath, targetPath);
+            } else if (entry.isFile()) {
+              try {
+                // Copy file
+                fs.copyFileSync(sourcePath, targetPath);
+                filesCopied++;
+              } catch (error) {
+                console.error(`Error copying file ${entry.name}:`, error);
+                filesSkipped++;
+              }
+            }
+          }
+        }
+
+        copyDirectory(uploadsSourceDir, storagePath);
+        console.log(`Files copied: ${filesCopied}, skipped: ${filesSkipped}`);
+      } else {
+        console.log('No uploads folder found in ZIP');
+      }
+
+      // Now import articles (same logic as JSON import)
+      let imported = 0;
+      let updated = 0;
+      let failed = 0;
+      const errors: any[] = [];
+
+      // First, import all manufacturers and variables that are referenced
+      for (const article of articles) {
+        if (article.manufacturer && article.manufacturer.manufacturer_id) {
+          try {
+            await transaction(async (client) => {
+              await client.query(
+                `INSERT INTO manufacturers (manufacturer_id, name, country, website, support_email, notes)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 ON CONFLICT (manufacturer_id) DO UPDATE SET
+                 name = EXCLUDED.name,
+                 country = EXCLUDED.country,
+                 website = EXCLUDED.website,
+                 support_email = EXCLUDED.support_email,
+                 notes = EXCLUDED.notes`,
+                [
+                  article.manufacturer.manufacturer_id,
+                  article.manufacturer.name,
+                  toNullable(article.manufacturer.country),
+                  toNullable(article.manufacturer.website),
+                  toNullable(article.manufacturer.support_email),
+                  toNullable(article.manufacturer.notes)
+                ]
+              );
+            });
+          } catch (error: any) {
+            console.log('Manufacturer import warning:', error.message);
+          }
+        }
+
+        // Import variables if they have full data
+        if (article.article_variables) {
+          for (const av of article.article_variables) {
+            if (av.variable && av.variable.variable_id) {
+              try {
+                await transaction(async (client) => {
+                  await client.query(
+                    `INSERT INTO variables_dict (variable_id, name, unit_default, description)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (variable_id) DO UPDATE SET
+                     name = EXCLUDED.name,
+                     unit_default = EXCLUDED.unit_default,
+                     description = EXCLUDED.description`,
+                    [
+                      av.variable.variable_id,
+                      av.variable.name,
+                      toNullable(av.variable.unit_default),
+                      toNullable(av.variable.description)
+                    ]
+                  );
+                });
+              } catch (error: any) {
+                console.log('Variable import warning:', error.message);
+              }
+            }
+          }
+        }
+      }
+
+      // Now import articles
+      for (const article of articles) {
+        try {
+          let wasUpdate = false;
+          await transaction(async (client) => {
+            const existingResult = await client.query(
+              'SELECT article_id FROM articles WHERE article_id = $1',
+              [article.article_id]
+            );
+            
+            wasUpdate = existingResult.rows.length > 0;
+            
+            await importArticle(client, article);
+          });
+          
+          // Only count after successful import
+          if (wasUpdate) {
+            updated++;
+          } else {
+            imported++;
+          }
+        } catch (error: any) {
+          failed++;
+          console.error(`Error importing article ${article.article_id}:`, error);
+          errors.push({
+            article_id: article.article_id,
+            error: error.message,
+            stack: error.stack?.split('\n').slice(0, 3).join('\n')
+          });
+        }
+      }
+
+      // Cleanup temp directory
+      console.log('Cleaning up temporary files...');
+      fs.rmSync(tempDir, { recursive: true, force: true });
+
+      res.json({
+        success: true,
+        message: 'ZIP imported successfully',
+        total: articles.length,
+        imported,
+        updated,
+        failed,
+        files_copied: filesCopied,
+        files_skipped: filesSkipped,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      // Cleanup temp directory on error
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('ZIP import error:', error);
+    res.status(500).json({ 
+      error: 'Error importing ZIP', 
+      message: error.message,
+      stack: error.stack 
     });
   }
 });

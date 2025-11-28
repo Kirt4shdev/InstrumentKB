@@ -595,7 +595,7 @@ articlesRouter.put('/:id', async (req: Request, res: Response) => {
         await client.query('DELETE FROM documents WHERE article_id = $1', [id]);
         
         // Borrar archivos físicos de los documentos que ya no están en la lista nueva
-        const newPaths = documents.map(d => d.url_or_path);
+        const newPaths = documents.map((d: any) => d.url_or_path);
         for (const oldDoc of existingDocs.rows) {
           if (!newPaths.includes(oldDoc.url_or_path) && !oldDoc.url_or_path.startsWith('http')) {
             const filePath = path.join(process.env.STORAGE_PATH || './uploads', oldDoc.url_or_path);
@@ -628,7 +628,7 @@ articlesRouter.put('/:id', async (req: Request, res: Response) => {
         await client.query('DELETE FROM images WHERE article_id = $1', [id]);
         
         // Borrar archivos físicos de las imágenes que ya no están en la lista nueva
-        const newPaths = images.map(i => i.url_or_path);
+        const newPaths = images.map((i: any) => i.url_or_path);
         for (const oldImg of existingImgs.rows) {
           if (!newPaths.includes(oldImg.url_or_path) && !oldImg.url_or_path.startsWith('http')) {
             const filePath = path.join(process.env.STORAGE_PATH || './uploads', oldImg.url_or_path);
